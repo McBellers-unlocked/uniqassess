@@ -4,6 +4,7 @@ import { getScenarioForAssessment } from "@/lib/recruit/scenario-loader";
 import { isMemoAiTask } from "@/lib/recruit/types";
 import { labWorkIsActive, labCommandIssue } from "@/lib/recruit/kubernetes-lab-config";
 import { LabError } from "@/lib/recruit/kubernetes-lab-runner";
+import { labRequestOriginAllowed } from "@/lib/recruit/kubernetes-lab-origin";
 import { readLab, refreshLab, startLab, runLabCommand } from "@/lib/recruit/kubernetes-lab-service";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
   try {
     // Browser requests must be same-origin. Server-only broker credentials never reach this endpoint's responses.
     const origin = request.headers.get("origin");
-    if (origin && origin !== request.nextUrl.origin) throw new LabError("Cross-origin lab requests are not permitted.", 403);
+    if (!labRequestOriginAllowed(origin, request.nextUrl.origin)) throw new LabError("Cross-origin lab requests are not permitted.", 403);
     const raw = await request.text();
     if (raw.length > 20_000) throw new LabError("The lab request is too large.", 413);
     let body: Record<string, unknown>;
