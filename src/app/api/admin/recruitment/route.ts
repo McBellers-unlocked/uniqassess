@@ -9,6 +9,8 @@ import { getRecruitScenarioById } from "@/lib/recruit/fam-p4-2026";
 import { getDbScenarioById } from "@/lib/recruit/scenario-loader";
 import { buildCohortPolicySnapshot } from "@/lib/recruit/assessment-modes";
 import { getOrCreateAssessmentVersion } from "@/lib/recruit/assessment-versions";
+import { awsLabPublicationIssues, taskAwsLab } from "@/lib/recruit/aws-lab-config";
+import { awsLabRuntimeAvailable } from "@/lib/recruit/aws-lab-runner";
 
 export const dynamic = "force-dynamic";
 
@@ -89,10 +91,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Unknown customScenarioId: ${customScenarioId}` }, { status: 400 });
     }
     // Require published status so drafts can't be assigned to a cohort.
-    const row = await prisma.recruitmentScenario.findUnique({ where: { id: customScenarioId } });
+    const row = await prisma.recruitmentScenario.findUnique({
+      where: { id: customScenarioId },
+      include: { tasks: { select: { number: true, title: true, kind: true, config: true } } },
+    });
     if (row?.status !== "published") {
       return NextResponse.json({ error: "Scenario must be published before it can be used for a cohort" }, { status: 400 });
     }
+    // Published scenarios remain editable. Check their current content before
+    // freezing it so adding an unavailable AWS draft cannot bypass publication.
+    const awsAvailable = row.tasks.some((task) => taskAwsLab(task.config)) ? await awsLabRuntimeAvailable() : false;
+    const labIssues = awsLabPublicationIssues(row.tasks, awsAvailable);
+    if (labIssues.length) return NextResponse.json({ error: "Practical lab setup is incomplete", details: labIssues }, { status: 409 });
     resolvedSlug = dbScenario.slug;
     resolvedScenarioId = dbScenario.scenarioId;
     defaultMinutes = dbScenario.defaultTotalMinutes;

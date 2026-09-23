@@ -231,6 +231,7 @@ model RecruitmentCandidate {
   emailResponses               RecruitmentEmailResponse[]
   evidenceBoard                RecruitmentCandidateEvidence[]
   labSessions                  RecruitmentLabSession[]
+  awsLabSessions               RecruitmentAwsLabSession[]
   defence                      RecruitmentCandidateDefence?
   psychometricRaterAssignments RecruitmentPsychometricRaterAssignment[]
 
@@ -279,6 +280,47 @@ model RecruitmentLabCommand {
   @@unique([sessionId, requestId])
   @@index([sessionId, createdAt])
   @@map("recruitment_lab_commands")
+}
+
+// AWS evidence is isolated from Kubernetes reconciliation and runner routing.
+model RecruitmentAwsLabSession {
+  id          String               @id @default(cuid())
+  candidateId String               @map("candidate_id")
+  candidate   RecruitmentCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  taskNumber  Int                  @map("task_number")
+  templateId  String               @map("template_id")
+  status      String               @default("starting")
+  expiresAt   DateTime             @map("expires_at")
+  error       String?              @db.Text
+  snapshot    Json?
+  cleanupCompletedAt DateTime?     @map("cleanup_completed_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+  commands    RecruitmentAwsLabCommand[]
+
+  @@unique([candidateId, taskNumber])
+  @@index([status, expiresAt])
+  @@map("recruitment_aws_lab_sessions")
+}
+
+model RecruitmentAwsLabCommand {
+  id         String                @id @default(uuid()) @db.Uuid
+  sessionId  String                @map("session_id")
+  session    RecruitmentAwsLabSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  requestId  String                @map("request_id") @db.Uuid
+  command    String                @db.Text
+  status     String                @default("queued")
+  stdout     String                @default("") @db.Text
+  stderr     String                @default("") @db.Text
+  exitCode   Int?                  @map("exit_code")
+  truncated  Boolean               @default(false)
+  createdAt  DateTime              @default(now()) @map("created_at")
+  startedAt  DateTime?             @map("started_at")
+  finishedAt DateTime?             @map("finished_at")
+
+  @@unique([sessionId, requestId])
+  @@index([sessionId, createdAt])
+  @@map("recruitment_aws_lab_commands")
 }
 
 model RecruitmentResponse {

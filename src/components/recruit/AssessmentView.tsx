@@ -25,6 +25,7 @@ interface TaskCfg {
   totalMarks: number;
   codeExecutionEnabled: boolean;
   kubernetesLab?: { templateId: string; title: string; instructions: string } | null;
+  awsLab?: { templateId: string; title: string; instructions: string } | null;
   deliverableLabel: string;
   deliverablePlaceholder: string;
 }
@@ -143,7 +144,9 @@ export default function AssessmentView({
   const [activeTask, setActiveTask] = useState<number>(1);
   const activeTaskCfg = tasks.find((t) => t.number === activeTask) ?? tasks[0];
   const [workViews, setWorkViews] = useState<Record<number, "deliverable" | "lab">>({});
-  const labOpen = Boolean(activeTaskCfg.kubernetesLab) && workViews[activeTask] === "lab";
+  const activeLab = activeTaskCfg.awsLab ?? activeTaskCfg.kubernetesLab;
+  const labProvider = activeTaskCfg.awsLab ? "aws" : "kubernetes";
+  const labOpen = Boolean(activeLab) && workViews[activeTask] === "lab";
 
   // In-assessment AI branding. Falls back to the IDSC defaults so the
   // existing built-ins (FAM/CSO/APLO) render exactly as before; scenarios set
@@ -810,7 +813,7 @@ export default function AssessmentView({
                 </button>
               )}
             </div>
-            <span className="hidden font-mono text-[10px] uppercase tracking-[0.14em] text-uq-3 lg:inline">{activeTaskCfg.kubernetesLab ? "Your work is recorded" : "Memo always stays open"}</span>
+            <span className="hidden font-mono text-[10px] uppercase tracking-[0.14em] text-uq-3 lg:inline">{activeLab ? "Your work is recorded" : "Memo always stays open"}</span>
           </div>
 
           {(() => {
@@ -832,21 +835,22 @@ export default function AssessmentView({
             );
           })()}
 
-          {activeTaskCfg.kubernetesLab && (
+          {activeLab && (
             <div className="flex flex-shrink-0 gap-2 border-b border-uq-faint px-4 py-2" aria-label="Work area">
               <ViewTab active={!labOpen} onClick={() => setWorkViews((previous) => ({ ...previous, [activeTask]: "deliverable" }))} label="Written deliverable" />
-              <ViewTab active={labOpen} onClick={() => setWorkViews((previous) => ({ ...previous, [activeTask]: "lab" }))} label="Kubernetes lab" />
+              <ViewTab active={labOpen} onClick={() => setWorkViews((previous) => ({ ...previous, [activeTask]: "lab" }))} label={labProvider === "aws" ? "AWS lab" : "Kubernetes lab"} />
             </div>
           )}
 
-          {activeTaskCfg.kubernetesLab && (
+          {activeLab && (
             <div className={`${labOpen ? "flex" : "hidden"} min-h-0 flex-1 flex-col`}>
               <KubernetesLabPanel
-                key={`${token}:${activeTask}`}
+                key={`${token}:${activeTask}:${labProvider}`}
                 token={token}
                 taskNumber={activeTask}
-                title={activeTaskCfg.kubernetesLab.title}
-                instructions={activeTaskCfg.kubernetesLab.instructions}
+                title={activeLab.title}
+                instructions={activeLab.instructions}
+                provider={labProvider}
                 disabled={submitting || submittedRef.current || Boolean(initial.candidate.submittedAt) || Boolean(initial.candidate.workLockedAt) || timer.expired}
               />
             </div>

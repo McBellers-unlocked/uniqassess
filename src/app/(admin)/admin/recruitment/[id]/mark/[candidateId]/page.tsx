@@ -49,6 +49,7 @@ interface ScenarioTask {
   number: number; kind: "memo_ai" | "email_inbox" | "chat"; title: string;
   emails?: ScenarioEmail[]; persona?: ScenarioPersona;
   labConfigured?: boolean;
+  labProvider?: "kubernetes" | "aws" | null;
 }
 interface EmailResponseRow {
   emailId: string; action: string; replyBody: string | null;
@@ -329,7 +330,7 @@ export default function MarkCandidatePage() {
                 </>
               )}
 
-              {reviewView === "lab" && <LabEvidence sessions={labSessionsForActive} taskNumber={activeTask} />}
+              {reviewView === "lab" && <LabEvidence sessions={labSessionsForActive} taskNumber={activeTask} provider={activeScenarioTask?.labProvider ?? undefined} />}
 
               {reviewView === "defence" && (
                 data.defence ? (

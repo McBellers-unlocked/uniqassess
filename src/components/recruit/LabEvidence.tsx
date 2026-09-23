@@ -12,6 +12,7 @@ export interface LabCommandEvidence {
 }
 
 export interface LabSessionEvidence {
+  provider?: "kubernetes" | "aws";
   id: string;
   taskNumber: number;
   templateId: string;
@@ -38,19 +39,22 @@ function statusLabel(status: string): string {
 export default function LabEvidence({
   sessions,
   taskNumber,
+  provider = "kubernetes",
 }: {
   sessions: LabSessionEvidence[];
   taskNumber: number;
+  provider?: "kubernetes" | "aws";
 }) {
   const taskSessions = sessions
     .filter((session) => session.taskNumber === taskNumber)
     .slice()
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const providerLabel = (taskSessions[0]?.provider ?? provider) === "aws" ? "AWS" : "Kubernetes";
 
   return (
     <section className="space-y-4 rounded-xl border border-uq bg-uq-elev1 p-5 shadow-uq-glass">
       <div>
-        <h2 className="text-base font-semibold text-uq">Kubernetes lab evidence · Task {taskNumber}</h2>
+        <h2 className="text-base font-semibold text-uq">{providerLabel} lab evidence · Task {taskNumber}</h2>
         <p className="mt-1 text-xs leading-relaxed text-uq-3">Recorded candidate commands and observed runtime output. Review these alongside the written response and rubric; this panel does not assign scores.</p>
       </div>
       {taskSessions.length === 0 ? (
@@ -70,9 +74,9 @@ export default function LabEvidence({
             </dl>
             {session.error && <p className="mt-2 text-sm text-[color:var(--uq-danger-text)]">{session.error}</p>}
             {session.status.toLowerCase() === "expired" && <p className="mt-2 text-xs text-uq-3">The lab expired. The retained record is shown below.</p>}
-            {session.snapshot && <div className="mt-3 space-y-2"><p className="text-xs text-uq-3">Final resource state captured by the lab service at {timestamp(session.snapshot.capturedAt)}. This is observed state, not an automatic score.</p><Output label="Final Kubernetes state" value={session.snapshot.content || "The final resource state was unavailable."} />{session.snapshot.truncated && <p className="text-xs text-uq-3">The resource snapshot reached its retention limit and was truncated.</p>}</div>}
+            {session.snapshot && <div className="mt-3 space-y-2"><p className="text-xs text-uq-3">Final resource state captured by the lab service at {timestamp(session.snapshot.capturedAt)}. This is observed state, not an automatic score.</p><Output label={`Final ${session.provider === "aws" ? "AWS" : "Kubernetes"} state`} value={session.snapshot.content || "The final resource state was unavailable."} />{session.snapshot.truncated && <p className="text-xs text-uq-3">The resource snapshot reached its retention limit and was truncated.</p>}</div>}
             {!session.snapshot && ["stopped", "expired", "failed"].includes(session.status) && <p className="mt-2 text-xs text-uq-3">Final resource state has not yet been collected. Refresh after cleanup completes.</p>}
-            {session.cleanupCompletedAt && <p className="mt-2 text-xs text-uq-3">Environment removal confirmed at {timestamp(session.cleanupCompletedAt)}.</p>}
+            {session.cleanupCompletedAt && <p className="mt-2 text-xs text-uq-3">{session.provider === "aws" ? "Lab resource cleanup" : "Environment removal"} confirmed at {timestamp(session.cleanupCompletedAt)}.</p>}
           </div>
           {session.commands.length === 0 ? (
             <p className="text-sm italic text-uq-3">No commands were recorded in this session.</p>

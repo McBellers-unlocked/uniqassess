@@ -133,6 +133,7 @@ export async function GET(
           totalMarks: t.totalMarks,
           codeExecutionEnabled: t.codeExecutionEnabled === true,
           kubernetesLab: t.kubernetesLab ?? null,
+          awsLab: t.awsLab ?? null,
           exhibitTitle: t.exhibitTitle,
           exhibitHtml: t.exhibitHtml,
           deliverableLabel: t.deliverableLabel,

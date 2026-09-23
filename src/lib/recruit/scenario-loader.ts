@@ -28,6 +28,7 @@ import {
 } from "./assessment-versions";
 import { taskHasManagedCodeExecution } from "./code-execution";
 import { taskKubernetesLab } from "./kubernetes-lab-config";
+import { taskAwsLab } from "./aws-lab-config";
 
 export async function getScenarioForAssessment(
   assessment: Pick<RecruitmentAssessment, "scenarioId" | "customScenarioId"> &
@@ -199,6 +200,7 @@ export function materialiseScenarioSnapshot(
           systemPrompt: task.systemPrompt ?? "",
           codeExecutionEnabled: taskHasManagedCodeExecution(task.config),
           kubernetesLab: taskKubernetesLab(task.config),
+          awsLab: taskAwsLab(task.config),
           exhibitHtml: exhibit?.html ?? "",
           exhibitTitle: exhibit?.title ?? "",
           exhibitSourceId: exhibit?.sourceId ?? exhibit?.id ?? `task-${task.number}-exhibit`,
@@ -275,6 +277,7 @@ function materialiseTask(task: DbScenarioRow["tasks"][number]): RecruitTaskConfi
         systemPrompt: task.systemPrompt ?? "",
         codeExecutionEnabled: taskHasManagedCodeExecution(task.config),
         kubernetesLab: taskKubernetesLab(task.config),
+        awsLab: taskAwsLab(task.config),
         exhibitHtml: task.exhibit?.html ?? "",
         exhibitTitle: task.exhibit?.title ?? "",
         exhibitSourceId: task.exhibit?.sourceId ?? task.exhibit?.id ?? `task-${task.number}-exhibit`,
@@ -349,6 +352,7 @@ function materialiseTask(task: DbScenarioRow["tasks"][number]): RecruitTaskConfi
         systemPrompt: task.systemPrompt ?? "",
         codeExecutionEnabled: taskHasManagedCodeExecution(task.config),
         kubernetesLab: taskKubernetesLab(task.config),
+        awsLab: taskAwsLab(task.config),
         exhibitHtml: task.exhibit?.html ?? "",
         exhibitTitle: task.exhibit?.title ?? "",
         exhibitSourceId: task.exhibit?.sourceId ?? task.exhibit?.id ?? `task-${task.number}-exhibit`,
