@@ -1,6 +1,6 @@
 # DevOps Engineer: two practical tasks
 
-Status: authored draft. The setup creates a new scenario, not a candidate cohort. Kubernetes is an existing operational pilot; Task 2 requires the dedicated AWS lab to be connected and verified. The assessment must remain in draft until its launch blockers are resolved. No human calibration or broad technical certification is claimed.
+Status: assessment content, database migration and both platform lab integrations are installed. Kubernetes is an existing operational pilot; the dedicated AWS account and private runtime are connected, with live technical acceptance in progress. The scenario remains a draft until the guarded synthetic activation checks pass. See the [AWS deployment record](AWS_LAB_DEPLOYMENT.md). No human calibration or broad technical certification is claimed.
 
 Scenario slug: `devops-kubernetes-aws-practical-v1`. Title: **DevOps Engineer — Kubernetes recovery and AWS release**. Evidence Mode; one shared **100-minute** timer, with suggested **40 minutes / 60 minutes** per task. These times require engineer calibration. No additional defence time is configured.
 
@@ -50,3 +50,24 @@ Re-running identical setup verifies the actual persisted content and reuses the 
 4. Accountable review and engineer calibration of time, wording, difficulty and marks. Any initial cohort must be explicitly scoped as an operational/engineer pilot until this is complete.
 
 The setup preserves these blockers. It is not a publication bypass. See [AWS lab plan](AWS_CLOUD_LAB_PLAN.md) and [Kubernetes deployment evidence](KUBERNETES_PILOT_DEPLOYMENT.md) for the underlying operational context.
+
+## Controlled synthetic activation
+
+After successful live AWS operator acceptance, an authorised operator may activate the exact seeded draft for two named fictional technical checks. This uses an explicitly recorded publication override; it does not record human approval. The `controlledPilot.syntheticOnly` marker blocks ordinary cohort creation, psychometric programmes and candidate imports into either frozen pilot cohort. A later editable content change cannot remove the frozen cohort's restriction. Hiring use requires a separately reviewed and calibrated version.
+
+- `devops-two-lab-live-pilot-v1`: Synthetic DevOps Pilot Alpha, `alpha@devops-pilot.example`, 100 minutes, for both candidate tasks and assessor evidence.
+- `devops-two-lab-expiry-pilot-v1`: Synthetic DevOps Pilot Beta, `beta@devops-pilot.example`, 6 minutes, for closed-browser deadline verification only. Its short duration is not a proposed assessment time.
+
+The expiry operation requires Alpha to exist and reuses exactly the same frozen assessment version. Reruns verify exact identities, one candidate per cohort, timers, mode and content hash; they do not reset status, deadlines, answers, evidence or tokens. Unexpected cohorts or candidates cause refusal. Neither operation sends invitations.
+
+For a human engineer pilot, review a new content version with a pinned, immutable exercise artifact and record genuine subject-matter and assessment review. Remove the synthetic-only marker only from that newly reviewed version, create a new cohort and calibrate timing and marking with practising engineers before hiring use. Preserve the original frozen synthetic versions and attempts.
+
+```powershell
+node --import tsx scripts/activate-devops-pilot.ts --check
+# Set DEVOPS_PILOT_ACCEPTANCE_PATH to the successful report inside .deployment.
+node scripts/setup-devops-assessment.mjs pilot
+node scripts/setup-devops-assessment.mjs expiry-pilot
+node scripts/inspect-devops-pilot.mjs
+```
+
+The wrapper retrieves existing hosting/database configuration in memory, verifies the management account, deployment database, recovery availability and migration state, and passes the verified report path to activation. Activation requires all named live checks, both cleanup receipts and independently observed resource absence, the expected account/template and a report less than 24 hours old. It verifies actual AWS and Kubernetes readiness before any write. The inspection helper uses the restricted reconciliation database role and an explicit read-only transaction; it selects only the two fixed fictional identities and evidence status/count/timing metadata, with no command text, output text, answer content, snapshot content, token or cookie. Reading it cannot trigger cleanup, which allows closed-browser scheduled reconciliation to be observed independently.
