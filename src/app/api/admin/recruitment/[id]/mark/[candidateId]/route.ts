@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   assertAssessmentAccess,
@@ -10,6 +11,7 @@ import { isChatTask, isEmailInboxTask } from "@/lib/recruit/types";
 import { analyzeTextReuse, type ReuseResult } from "@/lib/recruit/textReuse";
 import { criteriaForAssessment } from "@/lib/recruit/assessment-versions";
 import { reconcileCandidateLabs } from "@/lib/recruit/kubernetes-lab-service";
+import { reconcileCandidateLabs as reconcileAwsCandidateLabs } from "@/lib/recruit/aws-lab-service";
 
 export const dynamic = "force-dynamic";
 
@@ -122,16 +124,17 @@ export async function GET(
         },
       };
     }
-    return { number: t.number, kind: t.kind, title: t.title, labConfigured: Boolean(t.kubernetesLab) };
+    return {
+      number: t.number, kind: t.kind, title: t.title,
+      labConfigured: Boolean(t.kubernetesLab || t.awsLab),
+      labProvider: t.awsLab ? "aws" : t.kubernetesLab ? "kubernetes" : null,
+    };
   });
 
   // Select only evidence fields. Provider identifiers, credentials and candidate
   // identity must never reach the blind marking interface.
-  await reconcileCandidateLabs(c.id).catch(() => {});
-  const labSessionRows = await prisma.recruitmentLabSession.findMany({
-    where: { candidateId: c.id },
-    orderBy: [{ taskNumber: "asc" }, { createdAt: "asc" }],
-    select: {
+  await Promise.allSettled([reconcileCandidateLabs(c.id), reconcileAwsCandidateLabs(c.id)]);
+  const labEvidenceSelect = {
       id: true,
       taskNumber: true,
       templateId: true,
@@ -149,8 +152,19 @@ export async function GET(
           exitCode: true, truncated: true, createdAt: true, startedAt: true, finishedAt: true,
         },
       },
-    },
-  });
+  } satisfies Prisma.RecruitmentLabSessionSelect;
+  const [kubernetesRows, awsRows] = await Promise.all([
+    prisma.recruitmentLabSession.findMany({
+      where: { candidateId: c.id }, orderBy: [{ taskNumber: "asc" }, { createdAt: "asc" }], select: labEvidenceSelect,
+    }),
+    prisma.recruitmentAwsLabSession.findMany({
+      where: { candidateId: c.id }, orderBy: [{ taskNumber: "asc" }, { createdAt: "asc" }], select: labEvidenceSelect,
+    }),
+  ]);
+  const labSessionRows = [
+    ...kubernetesRows.map((session) => ({ ...session, provider: "kubernetes" as const })),
+    ...awsRows.map((session) => ({ ...session, provider: "aws" as const })),
+  ].sort((left, right) => left.taskNumber - right.taskNumber || left.createdAt.getTime() - right.createdAt.getTime());
   const labSessions = labSessionRows.map((session) => ({
     ...session,
     // Operational errors can contain provider details; markers need only the

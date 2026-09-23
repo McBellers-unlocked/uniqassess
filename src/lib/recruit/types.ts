@@ -66,6 +66,7 @@ export interface RecruitMemoAiTaskConfig extends RecruitTaskConfigBase {
   /** Run model-authored Python in Anthropic's isolated managed sandbox. */
   codeExecutionEnabled?: boolean;
   kubernetesLab?: import("./kubernetes-lab-config").LabTaskConfig | null;
+  awsLab?: import("./kubernetes-lab-config").LabTaskConfig | null;
   exhibitHtml: string;
   exhibitTitle: string;
   exhibitSourceId?: string;

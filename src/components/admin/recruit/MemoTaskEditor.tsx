@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { EditorScenario, EditorTask } from "./scenarioEditorTypes";
 import { KUBERNETES_LAB_TEMPLATE } from "@/lib/recruit/kubernetes-lab-config";
+import { AWS_LAB_TEMPLATE } from "@/lib/recruit/aws-lab-config";
 
 /**
  * Right-panel editor for memo_ai tasks. Fields: title, brief, totalMarks,
@@ -31,6 +32,7 @@ export default function MemoTaskEditor({
   const [deliverablePlaceholder, setDeliverablePlaceholder] = useState(task.deliverablePlaceholder ?? "");
   const [codeExecutionEnabled, setCodeExecutionEnabled] = useState(task.config?.codeExecutionEnabled === true);
   const [kubernetesLabEnabled, setKubernetesLabEnabled] = useState(task.config?.kubernetesLab?.enabled === true);
+  const [awsLabEnabled, setAwsLabEnabled] = useState(task.config?.awsLab?.enabled === true);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +48,7 @@ export default function MemoTaskEditor({
     setDeliverablePlaceholder(task.deliverablePlaceholder ?? "");
     setCodeExecutionEnabled(task.config?.codeExecutionEnabled === true);
     setKubernetesLabEnabled(task.config?.kubernetesLab?.enabled === true);
+    setAwsLabEnabled(task.config?.awsLab?.enabled === true);
     setSavedAt(null);
     setError(null);
     // Intentionally reinitialise only when selecting a different task; parent
@@ -70,7 +73,11 @@ export default function MemoTaskEditor({
             exhibitId: exhibitId || null,
             deliverableLabel: deliverableLabel.trim(),
             deliverablePlaceholder,
-            config: { ...(task.config ?? {}), codeExecutionEnabled, kubernetesLab: kubernetesLabEnabled ? { enabled: true, templateId: KUBERNETES_LAB_TEMPLATE.id } : null },
+            config: {
+              ...(task.config ?? {}), codeExecutionEnabled,
+              kubernetesLab: kubernetesLabEnabled ? { enabled: true, templateId: KUBERNETES_LAB_TEMPLATE.id } : null,
+              awsLab: awsLabEnabled ? { enabled: true, templateId: AWS_LAB_TEMPLATE.id } : null,
+            },
           }),
         }
       );
@@ -150,12 +157,31 @@ export default function MemoTaskEditor({
         <input
           type="checkbox"
           checked={kubernetesLabEnabled}
-          onChange={(e) => setKubernetesLabEnabled(e.target.checked)}
+          onChange={(e) => {
+            setKubernetesLabEnabled(e.target.checked);
+            if (e.target.checked) setAwsLabEnabled(false);
+          }}
           className="mt-0.5 h-4 w-4 rounded border-uq accent-[color:var(--uq-accent)]"
         />
         <span>
           <span className="block font-medium text-uq">Kubernetes practical lab</span>
           <span className="mt-0.5 block text-xs leading-relaxed text-uq-3">{KUBERNETES_LAB_TEMPLATE.title}. Candidates run their own commands in a temporary Kubernetes environment; commands and results are recorded for marking. A separately configured lab runner is required before candidates can use it.</span>
+        </span>
+      </label>
+
+      <label className="flex items-start gap-3 rounded-lg border border-uq bg-uq-glass-subtle p-3 text-sm">
+        <input
+          type="checkbox"
+          checked={awsLabEnabled}
+          onChange={(e) => {
+            setAwsLabEnabled(e.target.checked);
+            if (e.target.checked) setKubernetesLabEnabled(false);
+          }}
+          className="mt-0.5 h-4 w-4 rounded border-uq accent-[color:var(--uq-accent)]"
+        />
+        <span>
+          <span className="block font-medium text-uq">AWS practical lab</span>
+          <span className="mt-0.5 block text-xs leading-relaxed text-uq-3">{AWS_LAB_TEMPLATE.title}: cloud deployment, infrastructure as code and a release pipeline in a dedicated AWS sandbox. Commands run as asynchronous jobs and are recorded for marking. You can save a draft while setup is in progress; publication and new candidate cohorts require the AWS lab service to confirm that it is ready.</span>
         </span>
       </label>
 

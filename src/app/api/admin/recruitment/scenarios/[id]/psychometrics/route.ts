@@ -5,6 +5,8 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { getOrCreateAssessmentVersion } from "@/lib/recruit/assessment-versions";
 import { loadPsychometricProgrammeDashboard } from "@/lib/recruit/psychometric-programme-service";
 import { PSYCHOMETRIC_EVIDENCE_CATEGORIES } from "@/lib/recruit/psychometrics";
+import { awsLabPublicationIssues, taskAwsLab } from "@/lib/recruit/aws-lab-config";
+import { awsLabRuntimeAvailable } from "@/lib/recruit/aws-lab-runner";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +33,7 @@ export async function POST(
   const body = await request.json().catch(() => ({}));
   const scenario = await prisma.recruitmentScenario.findUnique({
     where: { id: params.id },
-    select: { id: true, title: true, status: true },
+    select: { id: true, title: true, status: true, tasks: { select: { number: true, title: true, kind: true, config: true } } },
   });
   if (!scenario) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (scenario.status !== "published") {
@@ -40,6 +42,9 @@ export async function POST(
       { status: 409 },
     );
   }
+  const awsAvailable = scenario.tasks.some((task) => taskAwsLab(task.config)) ? await awsLabRuntimeAvailable() : false;
+  const labIssues = awsLabPublicationIssues(scenario.tasks, awsAvailable);
+  if (labIssues.length) return NextResponse.json({ error: "Practical lab setup is incomplete", details: labIssues }, { status: 409 });
 
   const intendedUse = textField(body.intendedUse, 8_000);
   const targetPopulation = textField(body.targetPopulation, 8_000);

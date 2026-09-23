@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { labConfigIssue } from "@/lib/recruit/kubernetes-lab-config";
+import { awsLabConfigIssue } from "@/lib/recruit/aws-lab-config";
 import {
   assertScenarioAccess,
   requireScenarioBuilder,
@@ -41,6 +43,8 @@ export async function POST(
   if (!VALID_KINDS.includes(kind)) {
     return NextResponse.json({ error: `kind must be one of ${VALID_KINDS.join(", ")}` }, { status: 400 });
   }
+  const configIssue = labConfigIssue(body.config, kind) ?? awsLabConfigIssue(body.config, kind);
+  if (configIssue) return NextResponse.json({ error: configIssue }, { status: 400 });
   const title = body.title ? String(body.title).trim() : defaultTitle(kind);
   const briefMarkdown = body.briefMarkdown ? String(body.briefMarkdown) : "";
   const totalMarks = Number.isFinite(body.totalMarks) ? Number(body.totalMarks) : 0;
@@ -60,6 +64,7 @@ export async function POST(
       title,
       briefMarkdown,
       totalMarks,
+      ...(body.config !== undefined ? { config: body.config } : {}),
     },
   });
 

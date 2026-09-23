@@ -18,6 +18,9 @@ const nextConfig = {
     // Nonsecret lab switch/locator only. SSR fetches the runner key using its IAM role.
     KUBERNETES_LABS_ENABLED: process.env.KUBERNETES_LABS_ENABLED,
     KUBERNETES_LAB_CONFIG_SECRET_ARN: process.env.KUBERNETES_LAB_CONFIG_SECRET_ARN,
+    // Amplify reserves AWS_* environment names; map its nonsecret locators here.
+    AWS_LABS_ENABLED: process.env.UNIQASSESS_AWS_LABS_ENABLED ?? process.env.AWS_LABS_ENABLED,
+    AWS_LAB_RUNNER_FUNCTION_ARN: process.env.UNIQASSESS_AWS_LAB_RUNNER_FUNCTION_ARN ?? process.env.AWS_LAB_RUNNER_FUNCTION_ARN,
   },
   // Ensure scenario HTML exhibits + marking rubric JSONs under infra/recruit
   // are included in the serverless output so readFileSync(process.cwd() + …)

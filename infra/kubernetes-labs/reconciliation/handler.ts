@@ -1,6 +1,7 @@
 import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 import { PrismaClient } from "@prisma/client";
 import { reconcileKubernetesLabs } from "../../../src/lib/recruit/reconcile-kubernetes-labs";
+import { reconcileAwsLabs } from "../../../src/lib/recruit/reconcile-aws-labs";
 
 type Secrets = { database: string; runner: string };
 
@@ -39,9 +40,11 @@ export async function handler() {
     try {
       prisma = new PrismaClient({ datasources: { db: { url: config.databaseUrl } } });
       const summary = await reconcileKubernetesLabs(prisma);
-      console.log(JSON.stringify(summary));
-      if (summary.failed) throw new Error("Some sessions need retry");
-      return summary;
+      const awsSummary = process.env.AWS_LAB_RUNNER_FUNCTION_ARN ? await reconcileAwsLabs(prisma) : null;
+      const combined = { ...summary, ...(awsSummary ? { aws: awsSummary } : {}) };
+      console.log(JSON.stringify(combined));
+      if (summary.failed || awsSummary?.failed) throw new Error("Some sessions need retry");
+      return combined;
     } finally {
       process.env.KUBERNETES_LAB_CONFIG_SECRET_ARN = locator;
       delete process.env.KUBERNETES_LAB_RUNNER_URL;

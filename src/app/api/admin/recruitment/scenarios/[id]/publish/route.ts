@@ -8,6 +8,8 @@ import { evaluatePublicationReadiness } from "@/lib/recruit/validation/publicati
 import { getScenarioContentHash } from "@/lib/recruit/scenario-content-hash";
 import { labConfigIssue, taskKubernetesLab } from "@/lib/recruit/kubernetes-lab-config";
 import { resolveRunnerSettings } from "@/lib/recruit/kubernetes-lab-runner";
+import { awsLabPublicationIssues, taskAwsLab } from "@/lib/recruit/aws-lab-config";
+import { awsLabRuntimeAvailable } from "@/lib/recruit/aws-lab-runner";
 
 export const dynamic = "force-dynamic";
 
@@ -86,7 +88,9 @@ export async function POST(
   }
 
   // publish — run validation
-  const errors: string[] = [];
+  // Runtime availability is a hard gate, evaluated before any review override.
+  const awsAvailable = scenario.tasks.some((task) => taskAwsLab(task.config)) ? await awsLabRuntimeAvailable() : false;
+  const errors: string[] = awsLabPublicationIssues(scenario.tasks, awsAvailable);
   if (scenario.tasks.length === 0) {
     errors.push("Scenario must have at least one task.");
   }
