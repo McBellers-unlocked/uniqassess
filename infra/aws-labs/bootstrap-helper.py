@@ -8,9 +8,12 @@ SANDBOX = "689324611808"
 REGION = "eu-west-1"
 STACK = "uniqassess-aws-lab-sandbox"
 # Root supplies exact application-generated IDs after the browser attempts exist.
-# Keep this empty until those IDs are reviewed; never accept caller-provided IDs
-# as an allowlist. This extends only the read-only absence operation.
-BROWSER_PILOT_LAB_IDS = frozenset()
+# Never accept caller-provided IDs as an allowlist. This extends only the
+# read-only absence operation for the two reviewed synthetic browser attempts.
+BROWSER_PILOT_LAB_IDS = frozenset({
+    "cmue4s0510005lb1elll83jfa",
+    "cmue59x3g000pif1elug51yn8",
+})
 
 
 def handler(event, context):

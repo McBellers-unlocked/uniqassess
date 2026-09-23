@@ -1,11 +1,13 @@
 # Temporary AWS lab bootstrap cleanup
 
-Status: **prepared; not executed**. Keep the helper until candidate/assessor browser checks, submission cleanup, closed-browser expiry and independent absence receipts are saved. Execute only after the root operator requests this final cleanup step.
+Status: **completed at 2026-09-23T13:44:21.187Z** after operator authorization and both independent browser absence receipts. The temporary Lambda and its IAM role/sole inline policy were removed. Exact-resource lookups confirmed the function and role absent; the permanent runtime remained healthy, reconciliation enabled, and the exclusive lease empty. [Sanitized receipt](bootstrap-cleanup-evidence.json).
 
 The only removal targets are in management account `891612540396`, region `eu-west-1`:
 
 - Lambda `uniqassess-aws-lab-account-bootstrap`.
 - IAM role `uniqassess-aws-lab-account-bootstrap` and its sole inline policy `AssumeOnlyDedicatedSandbox`.
+
+The guarded operator script is `node infra/aws-labs/cleanup-bootstrap.mjs --inspect`. After final operator authorization, use `--execute-after-acceptance`. Both modes require the passing operator acceptance and the separate Alpha/Beta independent absence receipts; the script reads the exclusive DynamoDB lease and each browser session's cleanup status before allowing removal. It does not trigger lab cleanup.
 
 Do not remove the organization, OU, member account, `OrganizationAccountAccessRole`, scoped child orchestrator, candidate boundary, production application, Kubernetes resources, AWS lab runtime, DynamoDB state, artifact bucket or reconciliation rule.
 

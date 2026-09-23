@@ -10,6 +10,43 @@
       "lastModified": "2026-09-23T12:31:54+00:00",
       "size": 8503,
       "sha256": "14d39f58a2cb4891021c1364620bfff3dc86a2b934332f92fc75e89472d7940d"
+    },
+    {
+      "observedAt": "2026-09-23T13:18:34.105Z",
+      "phase": "browser-pilot-help-only-update",
+      "bucket": "uniqassess-aws-lab-artifacts-891612540396",
+      "key": "aws-service-release-v1/source.zip",
+      "versionId": "duITNnOVg2LmJ.l_q8DIoe_14EQzE9jx",
+      "lastModified": "2026-09-23T13:16:59+00:00",
+      "size": 8868,
+      "sha256": "56300d49cf8a21e9f692f7f261c24e3c925ea4b5f035a9f2e506b3a753134be5",
+      "comparedWithVersionId": "Ij5gyGiyK.LOXYwKgy7t1aLObN1DKh7V",
+      "comparison": {
+        "added": [],
+        "removed": [],
+        "changed": [
+          "candidate/README.lab.md"
+        ],
+        "unchanged": [
+          "candidate/.terraform.lock.hcl",
+          "candidate/app.py",
+          "candidate/main.tf",
+          "candidate/pipeline.sh",
+          "candidate/tests/test_app.py",
+          "candidate/variables.tf"
+        ],
+        "onlyCandidateHelpChanged": true
+      }
     }
-  ]
+  ],
+  "installedRuntimeAtBrowserHelpUpdate": {
+    "observedAt": "2026-09-23T13:19:00.253Z",
+    "functionName": "uniqassess-aws-lab-runner",
+    "sha256": "3a39ca3a4bb8fc33ebb670d68de1f731fec88b34f493f114c6e154fd2c8ebd5d",
+    "state": "Active",
+    "lastUpdate": "Successful",
+    "lastModified": "2026-09-23T12:30:28.000+0000",
+    "handler": "handler.handler",
+    "repackedLocalRuntimeInstalled": false
+  }
 }
