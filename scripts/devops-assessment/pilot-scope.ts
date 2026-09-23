@@ -24,6 +24,7 @@ export function assertPilotCohortScope(cohorts: Cohort[], versionId: string, req
       throw new Error("An existing cohort is outside the exact synthetic scope; no overwrite is allowed.");
     }
     if (row.candidates.length !== 1 || row.candidates[0].name !== expected.name || row.candidates[0].email !== expected.email
-      || row.candidates[0].anonymousId !== "A") throw new Error("An existing cohort has unexpected candidates; no attempt is changed.");
+      || row.candidates[0].anonymousId !== indexToAnonymousId(0)) throw new Error("An existing cohort has unexpected candidates; no attempt is changed.");
   }
 }
+import { indexToAnonymousId } from "../../src/lib/recruit/tokens";

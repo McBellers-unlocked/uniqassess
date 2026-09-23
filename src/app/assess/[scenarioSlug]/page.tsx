@@ -108,7 +108,7 @@ function Landing({
 }: {
   scenario: {
     title: string; organisation: string; positionTitle: string; taskCount: number;
-    memoTaskCount?: number; hasLiveMessage?: boolean;
+    memoTaskCount?: number; hasLiveMessage?: boolean; practicalTaskCount?: number; source?: "code" | "db";
     assistantName?: string | null; assistantShortName?: string | null;
   };
   assessment: { title: string; totalMinutes: number; closeDate: string; assessmentMode: "EVIDENCE" | "COPILOT" | "OPEN_AGENT"; defenceEnabled: boolean; defenceMinutes: number };
@@ -125,6 +125,9 @@ function Landing({
   const ksName = scenario.assistantName || "IDSC Knowledge System";
   const shortName = scenario.assistantShortName || "IDSC";
   const memoCount = scenario.memoTaskCount ?? scenario.taskCount;
+  const practicalCount = scenario.practicalTaskCount ?? 0;
+  const hasLabs = practicalCount > 0;
+  const customScenario = scenario.source === "db";
   const hasIm = scenario.hasLiveMessage ?? false;
   const modePolicy = getAssessmentModePolicy(assessment.assessmentMode);
   const memoCountWord = memoCount === 1 ? "one" : memoCount === 2 ? "two" : memoCount === 3 ? "three" : String(memoCount);
@@ -152,7 +155,9 @@ function Landing({
           <h1 className="text-2xl font-semibold tracking-[-0.01em] text-uq mt-1 mb-1">{scenario.positionTitle}</h1>
           <div className="text-sm text-uq-2">{scenario.organisation}</div>
           <div className="text-xs text-uq-3 italic mt-1">
-            {shortName} is a fictionalised entity modelled on a real UN-system centre. All names, figures, and internal details are invented for this assessment — cross-referencing the real-world organisation will not help.
+            {hasLabs ? "The services and data in this practical assessment are fictional. Work only in your assigned lab environments."
+              : customScenario ? `Use the ${scenario.organisation || "assessment"} context and materials provided in the task briefs.`
+                : `${shortName} is a fictionalised entity modelled on a real UN-system centre. All names, figures, and internal details are invented for this assessment — cross-referencing the real-world organisation will not help.`}
           </div>
 
           <div className="mt-6 grid sm:grid-cols-3 gap-3 text-sm">
@@ -190,15 +195,16 @@ function Landing({
           <div className="mt-7 prose prose-sm max-w-none text-uq-2">
             <h2 className="text-base font-semibold text-uq">What to expect</h2>
             <p>
-              This assessment has <strong>{memoCountWord} written {memoCount === 1 ? "task" : "tasks"}</strong>. You have <strong>{assessment.totalMinutes} minutes total</strong>.
+              This assessment has <strong>{memoCountWord} {hasLabs ? practicalCount === memoCount ? "practical" : "written and practical" : "written"} {memoCount === 1 ? "task" : "tasks"}{hasLabs ? " with written deliverables" : ""}</strong>. You have <strong>{assessment.totalMinutes} minutes total</strong>.
               You may switch between tasks at any time and divide the time as you see fit — time management is
               part of what is being assessed.
             </p>
-            <p>For each written task you will have:</p>
+            <p>For each {hasLabs ? "task" : "written task"} you will have:</p>
             <ul className="text-sm list-disc pl-5">
-              <li>An exhibit document — for example a contract, a financial statement, a report, or a briefing pack.</li>
-              <li>The {ksName} — an in-app AI assistant holding the underlying data, text, and reference material. Ask it specific questions; it will not volunteer issues for you.</li>
-              <li>A workspace for your written deliverable. It autosaves every few seconds — and you can <strong>Send</strong> a memo when you are done with it to move on to the next.</li>
+              <li>{hasLabs ? "A task brief and supporting technical materials describing the service, required work and evidence to retain." : customScenario ? "An exhibit document and supporting materials relevant to your task." : "An exhibit document — for example a contract, a financial statement, a report, or a briefing pack."}</li>
+              {hasLabs && <li>Access to the assigned practical lab when required by the task. Your commands, results and final lab state are retained as assessment evidence.</li>}
+              <li>{hasLabs ? `Optional support from the ${ksName}, an in-app AI assistant, within the ${modePolicy.label} policy above. It cannot operate your lab or replace your own practical evidence.` : `The ${ksName} — an in-app AI assistant holding the underlying data, text, and reference material. Ask it specific questions; it will not volunteer issues for you.`}</li>
+              <li>A workspace for your written deliverable. It autosaves every few seconds — and you can <strong>Send</strong> {hasLabs ? "your deliverable" : "a memo"} when you are done with it to move on to the next.</li>
             </ul>
             {hasIm && (
               <p>
@@ -210,9 +216,8 @@ function Landing({
               </p>
             )}
             <p>
-              Your responses are evaluated holistically. There is no pass mark — your work will be ranked
-              alongside other candidates. The way you investigate (the AI interaction) is recorded and
-              reviewed alongside your written response.
+              {hasLabs ? "An assessor reviews your written responses alongside your recorded practical evidence. Any Knowledge System interactions are recorded for contextual review."
+                : "Your responses are evaluated holistically. There is no pass mark — your work will be ranked alongside other candidates. The way you investigate (the AI interaction) is recorded and reviewed alongside your written response."}
             </p>
 
             <h2 className="text-base font-semibold text-uq mt-5">Important</h2>
@@ -220,7 +225,7 @@ function Landing({
               <li>Once you click <strong>Begin</strong> the {assessment.totalMinutes}-minute timer starts and cannot be paused.</li>
               <li>You may close your browser and return — your work and timer continue server-side.</li>
               <li>This URL is single-use. If a different browser tries to use the same link, it will be locked out.</li>
-              <li>You are expected to use the {ksName} (the in-app AI assistant) as part of your work — your interaction trail forms part of the assessment.</li>
+              <li>{hasLabs ? `Using the ${ksName} is optional. You remain responsible for the lab work, evidence and written deliverables you submit.` : `You are expected to use the ${ksName} (the in-app AI assistant) as part of your work — your interaction trail forms part of the assessment.`}</li>
               {hasIm && (
                 <li>A colleague may contact you by chat during the assessment. Treat it as a real interruption — read it, reply in the chat as you see fit, and return to your work. Your reply, and how you manage it alongside your written tasks, is recorded and reviewed.</li>
               )}
@@ -239,6 +244,7 @@ function Landing({
                 <strong>What we collect:</strong> your name and email (from the recruitment panel), your written
                 responses, every message you exchange with the in-app AI assistant, and activity events during the
                 assessment (tab-switches and the length of any pasted content — pasted text itself is not stored).
+                {hasLabs && " Practical lab commands, outputs and final lab state are also retained for assessment review."}
               </p>
               <p>
                 <strong>Where it goes:</strong> your prompts and the assistant&rsquo;s replies are processed via the

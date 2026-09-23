@@ -89,7 +89,7 @@ async function main() {
       requireValue(identity[0]?.role === ROLE && identity[0]?.read_only === 'on', 'Database role/read-only verification failed.');
       // Only counts are selected until the exact fictional identity set passes.
       const scope = await tx.$queryRawUnsafe(`SELECT c.assessment_id, count(*)::int AS total,
-        count(*) FILTER (WHERE ${FILTER} AND c.anonymous_id = 'A')::int AS expected
+        count(*) FILTER (WHERE ${FILTER} AND c.anonymous_id = 'Candidate A')::int AS expected
         FROM recruitment_candidates c WHERE c.assessment_id IN ($1, $2) GROUP BY c.assessment_id`, ...COHORTS);
       requireValue(scope.length <= 2 && scope.every((row) => row.total === 1 && row.expected === 1), 'Synthetic pilot identity/count mismatch; no record details were selected.');
       const k8 = await tx.$queryRawUnsafe(observations('kubernetes'), ...COHORTS);
