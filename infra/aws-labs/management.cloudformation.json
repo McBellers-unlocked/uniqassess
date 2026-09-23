@@ -1,0 +1,98 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "UNIQassess AWS lab management runtime; private invocation and one isolated sandbox account.",
+  "Parameters": {
+    "SandboxAccountId": { "Type": "String", "Default": "689324611808", "AllowedValues": ["689324611808"] },
+    "RuntimeS3Key": { "Type": "String", "Default": "" },
+    "CandidateAccessEnabled": { "Type": "String", "Default": "false", "AllowedValues": ["true", "false"] },
+    "ReconcileEnabled": { "Type": "String", "Default": "false", "AllowedValues": ["true", "false"] }
+  },
+  "Conditions": {
+    "RuntimeInstalled": { "Fn::Not": [{ "Fn::Equals": [{ "Ref": "RuntimeS3Key" }, ""] }] },
+    "ReconciliationEnabled": { "Fn::Equals": [{ "Ref": "ReconcileEnabled" }, "true"] }
+  },
+  "Resources": {
+    "Sessions": {
+      "Type": "AWS::DynamoDB::Table",
+      "DeletionPolicy": "Retain", "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "TableName": "uniqassess-aws-lab-sessions",
+        "BillingMode": "PAY_PER_REQUEST",
+        "AttributeDefinitions": [{ "AttributeName": "id", "AttributeType": "S" }],
+        "KeySchema": [{ "AttributeName": "id", "KeyType": "HASH" }],
+        "PointInTimeRecoverySpecification": { "PointInTimeRecoveryEnabled": true },
+        "SSESpecification": { "SSEEnabled": true },
+        "Tags": [{ "Key": "Purpose", "Value": "UNIQassess candidate AWS lab control" }]
+      }
+    },
+    "Artifacts": {
+      "Type": "AWS::S3::Bucket", "DeletionPolicy": "Retain", "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "BucketName": { "Fn::Sub": "uniqassess-aws-lab-artifacts-${AWS::AccountId}" },
+        "PublicAccessBlockConfiguration": { "BlockPublicAcls": true, "IgnorePublicAcls": true, "BlockPublicPolicy": true, "RestrictPublicBuckets": true },
+        "OwnershipControls": { "Rules": [{ "ObjectOwnership": "BucketOwnerEnforced" }] },
+        "BucketEncryption": { "ServerSideEncryptionConfiguration": [{ "ServerSideEncryptionByDefault": { "SSEAlgorithm": "AES256" } }] },
+        "VersioningConfiguration": { "Status": "Enabled" },
+        "LifecycleConfiguration": { "Rules": [{ "Id": "AbortIncompleteUploads", "Status": "Enabled", "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 1 } }] }
+      }
+    },
+    "ArtifactTransportPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": { "Bucket": { "Ref": "Artifacts" }, "PolicyDocument": {
+        "Version": "2012-10-17", "Statement": [{ "Sid": "RequireTls", "Effect": "Deny", "Principal": "*", "Action": "s3:*",
+          "Resource": [{ "Fn::GetAtt": ["Artifacts", "Arn"] }, { "Fn::Sub": "${Artifacts.Arn}/*" }],
+          "Condition": { "Bool": { "aws:SecureTransport": "false" } } }]
+      } }
+    },
+    "RunnerLogGroup": {
+      "Type": "AWS::Logs::LogGroup", "DeletionPolicy": "Retain", "UpdateReplacePolicy": "Retain",
+      "Properties": { "LogGroupName": "/aws/lambda/uniqassess-aws-lab-runner", "RetentionInDays": 30 }
+    },
+    "RunnerRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "uniqassess-aws-lab-runner",
+        "AssumeRolePolicyDocument": { "Version": "2012-10-17", "Statement": [{ "Effect": "Allow", "Principal": { "Service": "lambda.amazonaws.com" }, "Action": "sts:AssumeRole" }] },
+        "Policies": [{ "PolicyName": "IsolatedLabControl", "PolicyDocument": { "Version": "2012-10-17", "Statement": [
+          { "Effect": "Allow", "Action": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:ConditionCheckItem", "dynamodb:Query", "dynamodb:Scan"], "Resource": { "Fn::GetAtt": ["Sessions", "Arn"] } },
+          { "Effect": "Allow", "Action": ["s3:GetObject", "s3:GetObjectVersion"], "Resource": { "Fn::Sub": "${Artifacts.Arn}/*" } },
+          { "Effect": "Allow", "Action": "sts:AssumeRole", "Resource": { "Fn::Sub": "arn:${AWS::Partition}:iam::${SandboxAccountId}:role/uniqassess-aws-lab-orchestrator" } },
+          { "Effect": "Allow", "Action": ["logs:CreateLogStream", "logs:PutLogEvents"], "Resource": { "Fn::GetAtt": ["RunnerLogGroup", "Arn"] } },
+          { "Effect": "Allow", "Action": "lambda:InvokeFunction", "Resource": { "Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:uniqassess-aws-lab-runner" } }
+        ] } }],
+        "Tags": [{ "Key": "Purpose", "Value": "UNIQassess AWS lab management runtime" }]
+      }
+    },
+    "Runner": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "uniqassess-aws-lab-runner", "Runtime": "python3.12", "Handler": { "Fn::If": ["RuntimeInstalled", "handler.handler", "index.handler"] },
+        "Role": { "Fn::GetAtt": ["RunnerRole", "Arn"] }, "Timeout": 120, "MemorySize": 512, "ReservedConcurrentExecutions": 10,
+        "Code": { "Fn::If": ["RuntimeInstalled", { "S3Bucket": { "Ref": "Artifacts" }, "S3Key": { "Ref": "RuntimeS3Key" } }, { "ZipFile": "def handler(event, context):\n    return {'statusCode': 503, 'body': {'enabled': False, 'ready': False, 'provider': 'aws', 'templateId': 'aws-service-release-v1', 'error': 'Runtime installation pending'}}\n" }] },
+        "Environment": { "Variables": {
+          "TABLE_NAME": { "Ref": "Sessions" }, "SANDBOX_ACCOUNT": { "Ref": "SandboxAccountId" },
+          "SANDBOX_ROLE_ARN": { "Fn::Sub": "arn:${AWS::Partition}:iam::${SandboxAccountId}:role/uniqassess-aws-lab-orchestrator" },
+          "CANDIDATE_BOUNDARY_ARN": { "Fn::Sub": "arn:${AWS::Partition}:iam::${SandboxAccountId}:policy/uniqassess-lab-candidate-boundary" },
+          "REGION": { "Ref": "AWS::Region" }, "ARTIFACT_BUCKET": { "Ref": "Artifacts" }, "ARTIFACT_KEY": "aws-service-release-v1/source.zip",
+          "AWS_LABS_ENABLED": { "Ref": "CandidateAccessEnabled" }
+        } }
+      }
+    },
+    "ReconcileSchedule": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "Name": "uniqassess-aws-lab-reconcile", "ScheduleExpression": "rate(1 minute)", "State": { "Fn::If": ["ReconciliationEnabled", "ENABLED", "DISABLED"] },
+        "Targets": [{ "Id": "runner", "Arn": { "Fn::GetAtt": ["Runner", "Arn"] }, "Input": "{\"operation\":\"reconcile\"}" }]
+      }
+    },
+    "AllowScheduledReconciliation": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": { "Action": "lambda:InvokeFunction", "FunctionName": { "Ref": "Runner" }, "Principal": "events.amazonaws.com", "SourceArn": { "Fn::GetAtt": ["ReconcileSchedule", "Arn"] } }
+    }
+  },
+  "Outputs": {
+    "TableName": { "Value": { "Ref": "Sessions" } }, "ArtifactBucket": { "Value": { "Ref": "Artifacts" } },
+    "RunnerArn": { "Value": { "Fn::GetAtt": ["Runner", "Arn"] } }, "RunnerRoleArn": { "Value": { "Fn::GetAtt": ["RunnerRole", "Arn"] } },
+    "ReconcileSchedule": { "Value": { "Ref": "ReconcileSchedule" } }
+  }
+}

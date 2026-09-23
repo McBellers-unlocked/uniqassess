@@ -1,0 +1,74 @@
+{
+  "checkedAt": "2026-09-23T12:21:31.791Z",
+  "management": {
+    "accountId": "891612540396",
+    "stackName": "uniqassess-aws-lab-management",
+    "status": "UPDATE_COMPLETE",
+    "outputs": [
+      {
+        "OutputKey": "ArtifactBucket",
+        "OutputValue": "uniqassess-aws-lab-artifacts-891612540396"
+      },
+      {
+        "OutputKey": "TableName",
+        "OutputValue": "uniqassess-aws-lab-sessions"
+      },
+      {
+        "OutputKey": "RunnerArn",
+        "OutputValue": "arn:aws:lambda:eu-west-1:891612540396:function:uniqassess-aws-lab-runner"
+      },
+      {
+        "OutputKey": "ReconcileSchedule",
+        "OutputValue": "uniqassess-aws-lab-reconcile"
+      },
+      {
+        "OutputKey": "RunnerRoleArn",
+        "OutputValue": "arn:aws:iam::891612540396:role/uniqassess-aws-lab-runner"
+      }
+    ],
+    "parameters": [
+      {
+        "ParameterKey": "ReconcileEnabled",
+        "ParameterValue": "false"
+      },
+      {
+        "ParameterKey": "RuntimeS3Key",
+        "ParameterValue": ""
+      },
+      {
+        "ParameterKey": "CandidateAccessEnabled",
+        "ParameterValue": "false"
+      },
+      {
+        "ParameterKey": "SandboxAccountId",
+        "ParameterValue": "689324611808"
+      }
+    ]
+  },
+  "sandbox": {
+    "accountId": "689324611808",
+    "stackName": "uniqassess-aws-lab-sandbox",
+    "status": "CREATE_COMPLETE",
+    "outputs": [
+      {
+        "OutputKey": "CandidateBoundaryArn",
+        "OutputValue": "arn:aws:iam::689324611808:policy/uniqassess-lab-candidate-boundary"
+      },
+      {
+        "OutputKey": "OrchestratorRoleArn",
+        "OutputValue": "arn:aws:iam::689324611808:role/uniqassess-aws-lab-orchestrator"
+      }
+    ],
+    "failures": []
+  },
+  "sandboxPublicAccessBlock": {
+    "BlockPublicAcls": true,
+    "IgnorePublicAcls": true,
+    "BlockPublicPolicy": true,
+    "RestrictPublicBuckets": true
+  },
+  "runtimeInstalled": false,
+  "candidateAccessEnabled": false,
+  "reconcileScheduleEnabled": false,
+  "bootstrapHelperCleanupPending": true
+}

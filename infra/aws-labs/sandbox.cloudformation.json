@@ -1,0 +1,55 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "UNIQassess dedicated AWS sandbox control role and immutable candidate boundary; no candidate lab started.",
+  "Parameters": {
+    "ManagementRoleArn": { "Type": "String", "Default": "arn:aws:iam::891612540396:role/uniqassess-aws-lab-runner", "AllowedValues": ["arn:aws:iam::891612540396:role/uniqassess-aws-lab-runner"] }
+  },
+  "Resources": {
+    "CandidateBoundary": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties": {
+        "ManagedPolicyName": "uniqassess-lab-candidate-boundary",
+        "Description": "Protected cap for candidate and app roles; operator replaces fixed lease deadline only while account is exclusively reserved.",
+        "PolicyDocument": { "Version": "2012-10-17", "Statement": [
+          { "Sid": "DenyAfterLeaseDeadline", "Effect": "Deny", "Action": "*", "Resource": "*", "Condition": { "DateGreaterThanEquals": { "aws:CurrentTime": "1970-01-01T00:00:00Z" } } },
+          { "Sid": "ReadIdentity", "Effect": "Allow", "Action": "sts:GetCallerIdentity", "Resource": "*" },
+          { "Sid": "ExerciseObjects", "Effect": "Allow", "Action": ["s3:GetBucketLocation", "s3:ListBucket", "s3:GetObject", "s3:GetObjectVersion", "s3:PutObject", "s3:DeleteObject"],
+            "Resource": [{ "Fn::Sub": "arn:${AWS::Partition}:s3:::uniqassess-lab-${AWS::AccountId}-*" }, { "Fn::Sub": "arn:${AWS::Partition}:s3:::uniqassess-lab-${AWS::AccountId}-*/*" }] },
+          { "Sid": "ExerciseFunctionRelease", "Effect": "Allow", "Action": ["lambda:GetFunction", "lambda:GetFunctionConfiguration", "lambda:GetAlias", "lambda:ListAliases", "lambda:ListVersionsByFunction", "lambda:GetPolicy", "lambda:ListTags", "lambda:UpdateFunctionCode", "lambda:PublishVersion", "lambda:CreateAlias", "lambda:UpdateAlias", "lambda:DeleteAlias", "lambda:InvokeFunction"],
+            "Resource": { "Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:uniqassess-lab-*" } },
+          { "Sid": "ExerciseApplicationPolicy", "Effect": "Allow", "Action": ["iam:GetRole", "iam:GetRolePolicy", "iam:ListRolePolicies", "iam:PutRolePolicy", "iam:DeleteRolePolicy"],
+            "Resource": { "Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/uniqassess-lab-*-app" } },
+          { "Sid": "ExerciseLogs", "Effect": "Allow", "Action": ["logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogStreams", "logs:GetLogEvents", "logs:FilterLogEvents"],
+            "Resource": [{ "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/uniqassess-lab-*:*" }, { "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/uniqassess-lab-*:*" }] },
+          { "Sid": "ExerciseAlarms", "Effect": "Allow", "Action": ["cloudwatch:PutMetricAlarm", "cloudwatch:DeleteAlarms", "cloudwatch:DescribeAlarms", "cloudwatch:DescribeAlarmHistory", "cloudwatch:ListTagsForResource", "cloudwatch:TagResource", "cloudwatch:UntagResource"],
+            "Resource": { "Fn::Sub": "arn:${AWS::Partition}:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:uniqassess-lab-*" } },
+          { "Sid": "ReadMetrics", "Effect": "Allow", "Action": ["cloudwatch:GetMetricData", "cloudwatch:GetMetricStatistics", "cloudwatch:ListMetrics"], "Resource": "*" }
+        ] }
+      }
+    },
+    "OrchestratorRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "uniqassess-aws-lab-orchestrator", "MaxSessionDuration": 3600,
+        "AssumeRolePolicyDocument": { "Version": "2012-10-17", "Statement": [{ "Effect": "Allow", "Principal": { "AWS": { "Ref": "ManagementRoleArn" } }, "Action": "sts:AssumeRole" }] },
+        "Policies": [{ "PolicyName": "ProvisionOnlyExerciseResources", "PolicyDocument": { "Version": "2012-10-17", "Statement": [
+          { "Sid": "CreateBoundedRoles", "Effect": "Allow", "Action": "iam:CreateRole", "Resource": { "Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/uniqassess-lab-*" },
+            "Condition": { "ArnEquals": { "iam:PermissionsBoundary": { "Ref": "CandidateBoundary" } } } },
+          { "Sid": "ManageExerciseRoles", "Effect": "Allow", "Action": ["iam:GetRole", "iam:DeleteRole", "iam:TagRole", "iam:UntagRole", "iam:PutRolePolicy", "iam:GetRolePolicy", "iam:DeleteRolePolicy", "iam:ListRolePolicies", "iam:ListAttachedRolePolicies"], "Resource": { "Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/uniqassess-lab-*" } },
+          { "Sid": "AdvanceProtectedLeaseDeadline", "Effect": "Allow", "Action": ["iam:GetPolicy", "iam:GetPolicyVersion", "iam:ListPolicyVersions", "iam:CreatePolicyVersion", "iam:DeletePolicyVersion", "iam:SetDefaultPolicyVersion"], "Resource": { "Ref": "CandidateBoundary" } },
+          { "Sid": "PassOnlyExerciseServiceRoles", "Effect": "Allow", "Action": "iam:PassRole", "Resource": { "Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/uniqassess-lab-*" }, "Condition": { "StringEquals": { "iam:PassedToService": ["lambda.amazonaws.com", "codebuild.amazonaws.com"] } } },
+          { "Sid": "ManageExerciseFunctions", "Effect": "Allow", "Action": ["lambda:CreateFunction", "lambda:GetFunction", "lambda:UpdateFunctionCode", "lambda:DeleteFunction", "lambda:GetFunctionConfiguration", "lambda:UpdateFunctionConfiguration", "lambda:PublishVersion", "lambda:ListVersionsByFunction", "lambda:CreateAlias", "lambda:UpdateAlias", "lambda:DeleteAlias", "lambda:GetAlias", "lambda:ListAliases", "lambda:PutFunctionConcurrency", "lambda:GetFunctionConcurrency", "lambda:DeleteFunctionConcurrency", "lambda:InvokeFunction", "lambda:GetPolicy", "lambda:ListTags", "lambda:TagResource", "lambda:UntagResource"], "Resource": { "Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:uniqassess-lab-*" } },
+          { "Sid": "ManageExerciseBuilds", "Effect": "Allow", "Action": ["codebuild:CreateProject", "codebuild:UpdateProject", "codebuild:DeleteProject", "codebuild:StartBuild", "codebuild:StopBuild", "codebuild:BatchGetBuilds", "codebuild:BatchGetProjects", "codebuild:ListBuildsForProject"], "Resource": [{ "Fn::Sub": "arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/uniqassess-lab-*" }, { "Fn::Sub": "arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:build/uniqassess-lab-*:*" }] },
+          { "Sid": "ManageExerciseBuckets", "Effect": "Allow", "Action": ["s3:CreateBucket", "s3:DeleteBucket", "s3:GetBucketLocation", "s3:ListBucket", "s3:ListBucketVersions", "s3:GetBucketPublicAccessBlock", "s3:PutBucketPublicAccessBlock", "s3:GetEncryptionConfiguration", "s3:PutEncryptionConfiguration", "s3:GetLifecycleConfiguration", "s3:PutLifecycleConfiguration", "s3:GetBucketVersioning", "s3:PutBucketVersioning", "s3:GetBucketTagging", "s3:PutBucketTagging", "s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:DeleteObjectVersion", "s3:GetObjectVersion", "s3:ListBucketMultipartUploads", "s3:ListMultipartUploadParts", "s3:AbortMultipartUpload"], "Resource": [{ "Fn::Sub": "arn:${AWS::Partition}:s3:::uniqassess-lab-${AWS::AccountId}-*" }, { "Fn::Sub": "arn:${AWS::Partition}:s3:::uniqassess-lab-${AWS::AccountId}-*/*" }] },
+          { "Sid": "ManageExerciseLogs", "Effect": "Allow", "Action": ["logs:CreateLogGroup", "logs:DeleteLogGroup", "logs:CreateLogStream", "logs:DescribeLogStreams", "logs:GetLogEvents", "logs:FilterLogEvents", "logs:PutRetentionPolicy", "logs:ListTagsForResource", "logs:TagResource", "logs:UntagResource"], "Resource": [{ "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/uniqassess-lab-*:*" }, { "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/uniqassess-lab-*:*" }] },
+          { "Sid": "ManageExerciseAlarms", "Effect": "Allow", "Action": ["cloudwatch:PutMetricAlarm", "cloudwatch:DeleteAlarms", "cloudwatch:DescribeAlarms", "cloudwatch:DescribeAlarmHistory", "cloudwatch:ListTagsForResource", "cloudwatch:TagResource", "cloudwatch:UntagResource"], "Resource": { "Fn::Sub": "arn:${AWS::Partition}:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:uniqassess-lab-*" } },
+          { "Sid": "ReadSandboxInventory", "Effect": "Allow", "Action": ["sts:GetCallerIdentity", "iam:ListRoles", "lambda:ListFunctions", "codebuild:ListProjects", "s3:ListAllMyBuckets", "logs:DescribeLogGroups", "cloudwatch:GetMetricData", "cloudwatch:GetMetricStatistics", "cloudwatch:ListMetrics"], "Resource": "*" }
+        ] } }]
+      }
+    }
+  },
+  "Outputs": {
+    "OrchestratorRoleArn": { "Value": { "Fn::GetAtt": ["OrchestratorRole", "Arn"] } },
+    "CandidateBoundaryArn": { "Value": { "Ref": "CandidateBoundary" } }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "checkedAt": "2026-09-23T12:30:59.424Z",
+  "method": "AWS IAM simulator on separate per-statement policy inputs (identical union/explicit-deny semantics), plus Access Analyzer on full AST-extracted runtime policy; no candidate mutation",
+  "maxSupportedLabIdLength": 35,
+  "policyBytes": 5967,
+  "policyStatements": 16,
+  "accessAnalyzer": {
+    "errors": 0,
+    "securityWarnings": 0,
+    "suggestions": [
+      "EQUIVALENT_TO_NULL_FALSE"
+    ]
+  },
+  "results": [
+    {
+      "name": "no-alarm-actions",
+      "expected": "allowed",
+      "actual": "allowed",
+      "passed": true,
+      "missingContext": []
+    },
+    {
+      "name": "alarm-actions-denied",
+      "expected": "explicitDeny",
+      "actual": "explicitDeny",
+      "passed": true,
+      "missingContext": []
+    },
+    {
+      "name": "expired-lease",
+      "expected": "explicitDeny",
+      "actual": "explicitDeny",
+      "passed": true,
+      "missingContext": []
+    },
+    {
+      "name": "previous-lease-token",
+      "expected": "explicitDeny",
+      "actual": "explicitDeny",
+      "passed": true,
+      "missingContext": []
+    }
+  ],
+  "passed": true
+}

@@ -39,10 +39,15 @@ PY
 
 smoke() {
   local version=$1 prefix=$2
-  aws lambda invoke --function-name "$FUNCTION_NAME" --qualifier "$version" \
-    --cli-binary-format raw-in-base64-out --payload '{"order_id":"order-1042"}' \
-    "evidence/$prefix-response.json" > "evidence/$prefix-invoke.json"
-  python - "$prefix" <<'PY'
+  # IAM and alias changes propagate asynchronously. Retry only the read-only
+  # service check, retain every attempt, and fail the stage after the bound.
+  for attempt in $(seq 1 10); do
+    aws lambda invoke --function-name "$FUNCTION_NAME" --qualifier "$version" \
+      --cli-binary-format raw-in-base64-out --payload '{"order_id":"order-1042"}' \
+      "evidence/$prefix-response.json" > "evidence/$prefix-invoke.json"
+    cp "evidence/$prefix-response.json" "evidence/$prefix-response-$attempt.json"
+    cp "evidence/$prefix-invoke.json" "evidence/$prefix-invoke-$attempt.json"
+    if python - "$prefix" <<'PY'
 import json,sys
 prefix = 'evidence/' + sys.argv[1]
 invocation = json.load(open(prefix + '-invoke.json'))
@@ -53,6 +58,11 @@ body = json.loads(response['body'])
 assert body == {'order_id': 'order-1042', 'status': 'confirmed'}, body
 print('Service smoke check passed; executed version:', invocation.get('ExecutedVersion'))
 PY
+    then return 0; fi
+    if [[ "$attempt" -eq 10 ]]; then return 1; fi
+    echo "Service check not ready on attempt $attempt; waiting for bounded propagation"
+    sleep 5
+  done
 }
 
 if [[ "$MODE" == rollback ]]; then
