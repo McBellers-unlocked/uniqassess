@@ -2,6 +2,10 @@
 
 This is a fictional application in a dedicated candidate AWS sandbox. Use the lab's asynchronous jobs; a job can run for up to five minutes. Files persist between successful workspace saves. Check each job's terminal state and logs. The assessment deadline and submission stop admission of work and trigger account cleanup. Never use personal or production credentials.
 
+Project files and Terraform state persist, but downloaded provider caches (`.terraform`) and Python caches (`__pycache__`) do not. Begin each separate Terraform job with `terraform init -input=false`; the supplied pipeline already does this. Shell variables do not carry between jobs.
+
+IAM and alias changes may take time to become visible. Use bounded read/invoke checks and retain the retries as evidence instead of blindly repeating Terraform or deployment mutations.
+
 `session.json` and `terraform.tfvars.json` are provided by the operator. Confirm their fixed account and region against `aws sts get-caller-identity`. They name `function_name`, `application_role_name`, `data_bucket`, `alarm_name`, and the supplied immutable `known_good_version`. The permitted stable alias is `live`. These files contain names, not credentials. Temporary job credentials are supplied by the runner; do not copy them into files, notes or output.
 
 The function, application role, permissions boundary and private bucket already exist. The role boundary, trust, function memory/runtime/timeout/concurrency, bucket policy and pipeline engine are outside your remit. You may update application code, the `app-runtime` inline policy within its protected boundary, the `live` alias and one CloudWatch alarm with the supplied name. Account/region changes, public grants and unrelated resources are not required.

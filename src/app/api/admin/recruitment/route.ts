@@ -11,6 +11,7 @@ import { buildCohortPolicySnapshot } from "@/lib/recruit/assessment-modes";
 import { getOrCreateAssessmentVersion } from "@/lib/recruit/assessment-versions";
 import { awsLabPublicationIssues, taskAwsLab } from "@/lib/recruit/aws-lab-config";
 import { awsLabRuntimeAvailable } from "@/lib/recruit/aws-lab-runner";
+import { syntheticPilotRestriction } from "@/lib/recruit/controlled-pilot";
 
 export const dynamic = "force-dynamic";
 
@@ -98,6 +99,8 @@ export async function POST(request: NextRequest) {
     if (row?.status !== "published") {
       return NextResponse.json({ error: "Scenario must be published before it can be used for a cohort" }, { status: 400 });
     }
+    const pilotRestriction = syntheticPilotRestriction(row.roleEvidenceRecord);
+    if (pilotRestriction) return NextResponse.json({ error: pilotRestriction }, { status: 409 });
     // Published scenarios remain editable. Check their current content before
     // freezing it so adding an unavailable AWS draft cannot bypass publication.
     const awsAvailable = row.tasks.some((task) => taskAwsLab(task.config)) ? await awsLabRuntimeAvailable() : false;

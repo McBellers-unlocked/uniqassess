@@ -7,6 +7,7 @@ import { loadPsychometricProgrammeDashboard } from "@/lib/recruit/psychometric-p
 import { PSYCHOMETRIC_EVIDENCE_CATEGORIES } from "@/lib/recruit/psychometrics";
 import { awsLabPublicationIssues, taskAwsLab } from "@/lib/recruit/aws-lab-config";
 import { awsLabRuntimeAvailable } from "@/lib/recruit/aws-lab-runner";
+import { syntheticPilotRestriction } from "@/lib/recruit/controlled-pilot";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export async function POST(
   const body = await request.json().catch(() => ({}));
   const scenario = await prisma.recruitmentScenario.findUnique({
     where: { id: params.id },
-    select: { id: true, title: true, status: true, tasks: { select: { number: true, title: true, kind: true, config: true } } },
+    select: { id: true, title: true, status: true, roleEvidenceRecord: true, tasks: { select: { number: true, title: true, kind: true, config: true } } },
   });
   if (!scenario) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (scenario.status !== "published") {
@@ -42,6 +43,8 @@ export async function POST(
       { status: 409 },
     );
   }
+  const pilotRestriction = syntheticPilotRestriction(scenario.roleEvidenceRecord);
+  if (pilotRestriction) return NextResponse.json({ error: pilotRestriction }, { status: 409 });
   const awsAvailable = scenario.tasks.some((task) => taskAwsLab(task.config)) ? await awsLabRuntimeAvailable() : false;
   const labIssues = awsLabPublicationIssues(scenario.tasks, awsAvailable);
   if (labIssues.length) return NextResponse.json({ error: "Practical lab setup is incomplete", details: labIssues }, { status: 409 });

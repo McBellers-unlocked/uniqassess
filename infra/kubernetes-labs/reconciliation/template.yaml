@@ -12,12 +12,16 @@ Parameters:
     Type: String
   CodeKey:
     Type: String
+  AwsRunnerFunctionArn:
+    Type: String
+    Default: ''
   ScheduleEnabled:
     Type: String
     AllowedValues: ['true', 'false']
     Default: 'false'
 Conditions:
   ScheduleOn: !Equals [!Ref ScheduleEnabled, 'true']
+  HasAwsRunner: !Not [!Equals [!Ref AwsRunnerFunctionArn, '']]
 Resources:
   Logs:
     Type: AWS::Logs::LogGroup
@@ -44,6 +48,16 @@ Resources:
               - Effect: Allow
                 Action: [logs:CreateLogStream, logs:PutLogEvents]
                 Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${FunctionName}:*
+        - !If
+          - HasAwsRunner
+          - PolicyName: InvokeDedicatedAwsLab
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action: lambda:InvokeFunction
+                  Resource: !Ref AwsRunnerFunctionArn
+          - !Ref AWS::NoValue
   Function:
     Type: AWS::Lambda::Function
     DependsOn: Logs
@@ -64,6 +78,8 @@ Resources:
           KUBERNETES_LABS_ENABLED: 'false'
           LAB_RECONCILE_DATABASE_SECRET_ARN: !Ref DatabaseSecretArn
           KUBERNETES_LAB_CONFIG_SECRET_ARN: !Ref RunnerConfigSecretArn
+          AWS_LABS_ENABLED: 'false'
+          AWS_LAB_RUNNER_FUNCTION_ARN: !Ref AwsRunnerFunctionArn
   InvocationPolicy:
     Type: AWS::Lambda::EventInvokeConfig
     Properties:

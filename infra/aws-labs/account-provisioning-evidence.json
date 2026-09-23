@@ -1,0 +1,418 @@
+{
+  "checkedAt": "2026-09-23T12:20:30.256Z",
+  "managementAccountId": "891612540396",
+  "accountName": "UNIQassess Assessment Sandbox",
+  "region": "eu-west-1",
+  "candidateAccessEnabled": false,
+  "resourcesProvisioned": false,
+  "events": [
+    {
+      "at": "2026-09-23T12:00:50.415Z",
+      "type": "organization-created",
+      "organizationId": "o-6ugwwht3qj"
+    },
+    {
+      "at": "2026-09-23T12:00:56.463Z",
+      "type": "account-creation-requested",
+      "requestId": "car-2a64925f1a2a4375aea06f530408c9a0"
+    },
+    {
+      "at": "2026-09-23T12:00:58.293Z",
+      "type": "account-creation-pending",
+      "requestId": "car-2a64925f1a2a4375aea06f530408c9a0",
+      "attempt": 1
+    },
+    {
+      "at": "2026-09-23T12:01:12.363Z",
+      "type": "account-active",
+      "sandboxAccountId": "689324611808"
+    },
+    {
+      "at": "2026-09-23T12:01:22.111Z",
+      "type": "sandbox-moved-to-lab-ou",
+      "sandboxAccountId": "689324611808",
+      "labOuId": "ou-xc9q-of0al9sb"
+    },
+    {
+      "at": "2026-09-23T12:04:24.814Z",
+      "type": "account-active",
+      "sandboxAccountId": "689324611808"
+    },
+    {
+      "at": "2026-09-23T12:04:53.411Z",
+      "type": "temporary-bootstrap-helper-created",
+      "functionName": "uniqassess-aws-lab-account-bootstrap",
+      "sandboxAccountId": "689324611808"
+    },
+    {
+      "at": "2026-09-23T12:05:00.642Z",
+      "type": "sandbox-access-verified",
+      "sandboxAccountId": "689324611808",
+      "lambdaQuota": {
+        "concurrentExecutions": 400,
+        "unreservedConcurrentExecutions": 400,
+        "existingFunctionCount": 0
+      },
+      "codeBuildQuotas": [
+        {
+          "name": "Concurrently running builds for Linux GPU Small environment",
+          "code": "L-F1FE1B52",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM/2XLarge environment",
+          "code": "L-1E43FDE0",
+          "value": 5,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM/XLarge environment",
+          "code": "L-8D06F3EA",
+          "value": 5,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM Lambda/4GB environment",
+          "code": "L-72045165",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM Lambda/1GB environment",
+          "code": "L-FD92223D",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM/Medium environment",
+          "code": "L-DF544FF3",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM Lambda/2GB environment",
+          "code": "L-DE99852F",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for Linux/Small environment",
+          "code": "L-9D07B6EF",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM Lambda/10GB environment",
+          "code": "L-36AF3CA5",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM/Large environment",
+          "code": "L-596BEAB4",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM Lambda/8GB environment",
+          "code": "L-546A802A",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM/Small environment",
+          "code": "L-5ED1D25B",
+          "value": 60,
+          "adjustable": true
+        }
+      ]
+    },
+    {
+      "at": "2026-09-23T12:13:28.035Z",
+      "type": "account-active",
+      "sandboxAccountId": "689324611808"
+    },
+    {
+      "at": "2026-09-23T12:13:47.847Z",
+      "type": "temporary-bootstrap-helper-created",
+      "functionName": "uniqassess-aws-lab-account-bootstrap",
+      "sandboxAccountId": "689324611808"
+    },
+    {
+      "at": "2026-09-23T12:13:55.186Z",
+      "type": "sandbox-access-verified",
+      "sandboxAccountId": "689324611808",
+      "lambdaQuota": {
+        "concurrentExecutions": 400,
+        "unreservedConcurrentExecutions": 400,
+        "existingFunctionCount": 0
+      },
+      "codeBuildQuotas": [
+        {
+          "name": "Concurrently running builds for Linux GPU Small environment",
+          "code": "L-F1FE1B52",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM/2XLarge environment",
+          "code": "L-1E43FDE0",
+          "value": 5,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM/XLarge environment",
+          "code": "L-8D06F3EA",
+          "value": 5,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM Lambda/4GB environment",
+          "code": "L-72045165",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM Lambda/1GB environment",
+          "code": "L-FD92223D",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM/Medium environment",
+          "code": "L-DF544FF3",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM Lambda/2GB environment",
+          "code": "L-DE99852F",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for Linux/Small environment",
+          "code": "L-9D07B6EF",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM Lambda/10GB environment",
+          "code": "L-36AF3CA5",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM/Large environment",
+          "code": "L-596BEAB4",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM Lambda/8GB environment",
+          "code": "L-546A802A",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM/Small environment",
+          "code": "L-5ED1D25B",
+          "value": 60,
+          "adjustable": true
+        }
+      ]
+    },
+    {
+      "at": "2026-09-23T12:20:35.894Z",
+      "type": "account-active",
+      "sandboxAccountId": "689324611808"
+    },
+    {
+      "at": "2026-09-23T12:20:55.822Z",
+      "type": "temporary-bootstrap-helper-created",
+      "functionName": "uniqassess-aws-lab-account-bootstrap",
+      "sandboxAccountId": "689324611808"
+    },
+    {
+      "at": "2026-09-23T12:21:02.766Z",
+      "type": "sandbox-access-verified",
+      "sandboxAccountId": "689324611808",
+      "lambdaQuota": {
+        "concurrentExecutions": 400,
+        "unreservedConcurrentExecutions": 400,
+        "existingFunctionCount": 0
+      },
+      "codeBuildQuotas": [
+        {
+          "name": "Concurrently running builds for Linux GPU Small environment",
+          "code": "L-F1FE1B52",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM/2XLarge environment",
+          "code": "L-1E43FDE0",
+          "value": 5,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM/XLarge environment",
+          "code": "L-8D06F3EA",
+          "value": 5,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM Lambda/4GB environment",
+          "code": "L-72045165",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM Lambda/1GB environment",
+          "code": "L-FD92223D",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM/Medium environment",
+          "code": "L-DF544FF3",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM Lambda/2GB environment",
+          "code": "L-DE99852F",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for Linux/Small environment",
+          "code": "L-9D07B6EF",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM Lambda/10GB environment",
+          "code": "L-36AF3CA5",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM/Large environment",
+          "code": "L-596BEAB4",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM Lambda/8GB environment",
+          "code": "L-546A802A",
+          "value": 60,
+          "adjustable": true
+        },
+        {
+          "name": "Concurrently running builds for ARM/Small environment",
+          "code": "L-5ED1D25B",
+          "value": 60,
+          "adjustable": true
+        }
+      ]
+    }
+  ],
+  "operatorPrincipalType": "root",
+  "organizationId": "o-6ugwwht3qj",
+  "featureSet": "ALL",
+  "createAccountRequestId": "car-2a64925f1a2a4375aea06f530408c9a0",
+  "createdByThisProvisioner": true,
+  "sandboxAccountId": "689324611808",
+  "provisioningRoleArn": "arn:aws:iam::689324611808:role/OrganizationAccountAccessRole",
+  "labOuId": "ou-xc9q-of0al9sb",
+  "status": "account-provisioned-runtime-pending",
+  "bootstrapHelper": {
+    "functionName": "uniqassess-aws-lab-account-bootstrap",
+    "roleName": "uniqassess-aws-lab-account-bootstrap",
+    "temporary": true,
+    "cleanupRequired": true,
+    "permission": "sts:AssumeRole on arn:aws:iam::689324611808:role/OrganizationAccountAccessRole"
+  },
+  "assumeRoleVerified": true,
+  "lambdaQuota": {
+    "concurrentExecutions": 400,
+    "unreservedConcurrentExecutions": 400,
+    "existingFunctionCount": 0
+  },
+  "codeBuildQuotas": [
+    {
+      "name": "Concurrently running builds for Linux GPU Small environment",
+      "code": "L-F1FE1B52",
+      "value": 60,
+      "adjustable": true
+    },
+    {
+      "name": "Concurrently running builds for ARM/2XLarge environment",
+      "code": "L-1E43FDE0",
+      "value": 5,
+      "adjustable": true
+    },
+    {
+      "name": "Concurrently running builds for ARM/XLarge environment",
+      "code": "L-8D06F3EA",
+      "value": 5,
+      "adjustable": true
+    },
+    {
+      "name": "Concurrently running builds for ARM Lambda/4GB environment",
+      "code": "L-72045165",
+      "value": 60,
+      "adjustable": true
+    },
+    {
+      "name": "Concurrently running builds for ARM Lambda/1GB environment",
+      "code": "L-FD92223D",
+      "value": 60,
+      "adjustable": true
+    },
+    {
+      "name": "Concurrently running builds for ARM/Medium environment",
+      "code": "L-DF544FF3",
+      "value": 60,
+      "adjustable": true
+    },
+    {
+      "name": "Concurrently running builds for ARM Lambda/2GB environment",
+      "code": "L-DE99852F",
+      "value": 60,
+      "adjustable": true
+    },
+    {
+      "name": "Concurrently running builds for Linux/Small environment",
+      "code": "L-9D07B6EF",
+      "value": 60,
+      "adjustable": true
+    },
+    {
+      "name": "Concurrently running builds for ARM Lambda/10GB environment",
+      "code": "L-36AF3CA5",
+      "value": 60,
+      "adjustable": true
+    },
+    {
+      "name": "Concurrently running builds for ARM/Large environment",
+      "code": "L-596BEAB4",
+      "value": 60,
+      "adjustable": true
+    },
+    {
+      "name": "Concurrently running builds for ARM Lambda/8GB environment",
+      "code": "L-546A802A",
+      "value": 60,
+      "adjustable": true
+    },
+    {
+      "name": "Concurrently running builds for ARM/Small environment",
+      "code": "L-5ED1D25B",
+      "value": 60,
+      "adjustable": true
+    }
+  ]
+}

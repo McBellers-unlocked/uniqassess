@@ -6,6 +6,7 @@ import {
 } from "@/lib/admin-auth";
 import { generateToken, indexToAnonymousId, anonymousIdToIndex } from "@/lib/recruit/tokens";
 import { getScenarioForAssessment } from "@/lib/recruit/scenario-loader";
+import { syntheticPilotCohortRestriction } from "@/lib/recruit/controlled-pilot";
 
 export const dynamic = "force-dynamic";
 
@@ -53,8 +54,13 @@ export async function POST(
     return NextResponse.json({ error: "no valid entries" }, { status: 400 });
   }
 
-  const assessment = await prisma.recruitmentAssessment.findUnique({ where: { id: params.id } });
+  const assessment = await prisma.recruitmentAssessment.findUnique({ where: { id: params.id }, include: {
+    assessmentVersion: { select: { scenarioSnapshot: true } },
+    customScenario: { select: { roleEvidenceRecord: true } },
+  } });
   if (!assessment) return NextResponse.json({ error: "Assessment not found" }, { status: 404 });
+  const pilotRestriction = syntheticPilotCohortRestriction(assessment.assessmentVersion?.scenarioSnapshot, assessment.customScenario?.roleEvidenceRecord);
+  if (pilotRestriction) return NextResponse.json({ error: pilotRestriction }, { status: 409 });
 
   const scenario = await getScenarioForAssessment(assessment);
   const tokenPrefix = (scenario?.slug.toUpperCase().replace(/[^A-Z0-9]/g, "") || "ASS").slice(0, 6);
