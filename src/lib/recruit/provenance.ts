@@ -53,6 +53,7 @@ export function summariseWorkProvenance(
 export function provenanceEventLabel(eventType: string): string {
   const labels: Record<string, string> = {
     assessment_started: "Assessment started",
+    lab_started: "Kubernetes lab requested",
     task_opened: "Task opened",
     exhibit_opened: "Source exhibit opened",
     paste: "Paste activity",

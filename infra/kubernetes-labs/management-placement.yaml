@@ -1,0 +1,30 @@
+# Defense in depth: broker/cronjob pod placement is enforced by the API as well
+# as each Deployment/CronJob's own nodeSelector and toleration.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: uniqassess-control-placement
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: uniqassess-control
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: "has(object.spec.nodeSelector) && 'uniqassess.com.node-restriction.kubernetes.io/management' in object.spec.nodeSelector && object.spec.nodeSelector['uniqassess.com.node-restriction.kubernetes.io/management'] == 'true'"
+      message: Management pods must select the protected control-node label.
+    - expression: "!has(object.spec.nodeName) || (request.operation == 'UPDATE' && has(oldObject.spec.nodeName) && object.spec.nodeName == oldObject.spec.nodeName)"
+      message: Management pods must use the scheduler rather than bypassing placement.
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: uniqassess-control-placement
+spec:
+  policyName: uniqassess-control-placement
+  validationActions: [Deny]

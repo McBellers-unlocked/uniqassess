@@ -1,0 +1,75 @@
+# Replace every REPLACE_* value; use the broker image built from this directory.
+# The janitor has only namespace get/list/delete permissions. No broker API key.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lab-janitor-kubeconfig
+  namespace: uniqassess-control
+data:
+  kubeconfig: |
+    apiVersion: v1
+    kind: Config
+    clusters:
+      - name: assessment
+        cluster:
+          server: https://kubernetes.default.svc:443
+          certificate-authority: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    users:
+      - name: janitor
+        user:
+          tokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    contexts:
+      - name: assessment
+        context:
+          cluster: assessment
+          user: janitor
+    current-context: assessment
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: uniqassess-lab-janitor
+  namespace: uniqassess-control
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 60
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 50
+      backoffLimit: 1
+      template:
+        spec:
+          serviceAccountName: lab-janitor
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            seccompProfile: { type: RuntimeDefault }
+          containers:
+            - name: janitor
+              image: REPLACE_BROKER_IMAGE_WITH_DIGEST
+              command: [python, janitor.py]
+              env:
+                - { name: LAB_RUNNER_OWNER, value: REPLACE_OWNER }
+                - { name: LAB_CLUSTER_UID, value: REPLACE_KUBE_SYSTEM_UID }
+                - { name: KUBECONFIG, value: /run/cluster/kubeconfig }
+                - { name: HOME, value: /tmp }
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: { drop: [ALL] }
+              resources:
+                requests: { cpu: 50m, memory: 64Mi }
+                limits: { cpu: 250m, memory: 128Mi }
+              volumeMounts:
+                - { name: kubeconfig, mountPath: /run/cluster, readOnly: true }
+                - { name: tmp, mountPath: /tmp }
+          volumes:
+            - name: kubeconfig
+              configMap: { name: lab-janitor-kubeconfig }
+            - name: tmp
+              emptyDir: { sizeLimit: 64Mi }

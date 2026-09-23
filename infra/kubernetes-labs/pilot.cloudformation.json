@@ -1,0 +1,58 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "UNIQassess isolated Kubernetes pilot; two disposable EC2 hosts, no production routes or worker IAM role. Bootstrap and live validation are separate steps.",
+  "Parameters": {
+    "Project": { "Type": "String", "Default": "uniqassess-kubernetes-pilot", "AllowedPattern": "[a-z][a-z0-9-]{2,40}" },
+    "UbuntuImage": { "Type": "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>", "Default": "/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id" },
+    "WorkerKeyName": { "Type": "AWS::EC2::KeyPair::KeyName", "Description": "Dedicated ephemeral bootstrap public key; private key stays with the authorized operator/control host." },
+    "WorkerMetadataEndpoint": { "Type": "String", "Default": "enabled", "AllowedValues": ["enabled", "disabled"], "Description": "Keep enabled only for first cloud-init; update to disabled BEFORE creating candidate pods." }
+  },
+  "Resources": {
+    "Vpc": { "Type": "AWS::EC2::VPC", "Properties": { "CidrBlock": "10.88.0.0/16", "EnableDnsSupport": true, "EnableDnsHostnames": true, "Tags": [{ "Key": "Name", "Value": { "Ref": "Project" } }, { "Key": "Project", "Value": { "Ref": "Project" } }] } },
+    "InternetGateway": { "Type": "AWS::EC2::InternetGateway", "Properties": { "Tags": [{ "Key": "Project", "Value": { "Ref": "Project" } }] } },
+    "InternetAttachment": { "Type": "AWS::EC2::VPCGatewayAttachment", "Properties": { "VpcId": { "Ref": "Vpc" }, "InternetGatewayId": { "Ref": "InternetGateway" } } },
+    "Subnet": { "Type": "AWS::EC2::Subnet", "Properties": { "VpcId": { "Ref": "Vpc" }, "CidrBlock": "10.88.0.0/24", "AvailabilityZone": { "Fn::Select": [0, { "Fn::GetAZs": "" }] }, "MapPublicIpOnLaunch": false, "Tags": [{ "Key": "Project", "Value": { "Ref": "Project" } }] } },
+    "RouteTable": { "Type": "AWS::EC2::RouteTable", "Properties": { "VpcId": { "Ref": "Vpc" } } },
+    "SubnetRoute": { "Type": "AWS::EC2::SubnetRouteTableAssociation", "Properties": { "SubnetId": { "Ref": "Subnet" }, "RouteTableId": { "Ref": "RouteTable" } } },
+    "InternetRoute": { "Type": "AWS::EC2::Route", "DependsOn": "InternetAttachment", "Properties": { "RouteTableId": { "Ref": "RouteTable" }, "DestinationCidrBlock": "0.0.0.0/0", "GatewayId": { "Ref": "InternetGateway" } } },
+    "ControlSecurityGroup": { "Type": "AWS::EC2::SecurityGroup", "Properties": { "VpcId": { "Ref": "Vpc" }, "GroupDescription": "TLS broker only publicly; API and VXLAN only from sandbox worker", "SecurityGroupIngress": [{ "IpProtocol": "tcp", "FromPort": 443, "ToPort": 443, "CidrIp": "0.0.0.0/0", "Description": "HTTPS authenticated broker and TLS-ALPN ACME" }], "SecurityGroupEgress": [{ "IpProtocol": "-1", "CidrIp": "0.0.0.0/0" }], "Tags": [{ "Key": "Project", "Value": { "Ref": "Project" } }] } },
+    "WorkerSecurityGroup": { "Type": "AWS::EC2::SecurityGroup", "Properties": { "VpcId": { "Ref": "Vpc" }, "GroupDescription": "Sandbox node; no public inbound; operator SSH from control only", "SecurityGroupEgress": [{ "IpProtocol": "-1", "CidrIp": "0.0.0.0/0" }], "Tags": [{ "Key": "Project", "Value": { "Ref": "Project" } }] } },
+    "ControlAcmeHttp": { "Type": "AWS::EC2::SecurityGroupIngress", "Properties": { "GroupId": { "Ref": "ControlSecurityGroup" }, "IpProtocol": "tcp", "FromPort": 80, "ToPort": 80, "CidrIp": "0.0.0.0/0", "Description": "ACME certificate issuance/renewal; host proxy serves only ACME or HTTPS redirect" } },
+    "ControlApiFromWorker": { "Type": "AWS::EC2::SecurityGroupIngress", "Properties": { "GroupId": { "Ref": "ControlSecurityGroup" }, "SourceSecurityGroupId": { "Ref": "WorkerSecurityGroup" }, "IpProtocol": "tcp", "FromPort": 6443, "ToPort": 6443 } },
+    "ControlOverlayFromWorker": { "Type": "AWS::EC2::SecurityGroupIngress", "Properties": { "GroupId": { "Ref": "ControlSecurityGroup" }, "SourceSecurityGroupId": { "Ref": "WorkerSecurityGroup" }, "IpProtocol": "udp", "FromPort": 8472, "ToPort": 8472 } },
+    "WorkerOverlayFromControl": { "Type": "AWS::EC2::SecurityGroupIngress", "Properties": { "GroupId": { "Ref": "WorkerSecurityGroup" }, "SourceSecurityGroupId": { "Ref": "ControlSecurityGroup" }, "IpProtocol": "udp", "FromPort": 8472, "ToPort": 8472 } },
+    "WorkerSshFromControl": { "Type": "AWS::EC2::SecurityGroupIngress", "Properties": { "GroupId": { "Ref": "WorkerSecurityGroup" }, "SourceSecurityGroupId": { "Ref": "ControlSecurityGroup" }, "IpProtocol": "tcp", "FromPort": 22, "ToPort": 22 } },
+    "WorkerKubeletFromControl": { "Type": "AWS::EC2::SecurityGroupIngress", "Properties": { "GroupId": { "Ref": "WorkerSecurityGroup" }, "SourceSecurityGroupId": { "Ref": "ControlSecurityGroup" }, "IpProtocol": "tcp", "FromPort": 10250, "ToPort": 10250 } },
+    "BootstrapBucket": { "Type": "AWS::S3::Bucket", "DeletionPolicy": "Retain", "UpdateReplacePolicy": "Retain", "Properties": { "PublicAccessBlockConfiguration": { "BlockPublicAcls": true, "IgnorePublicAcls": true, "BlockPublicPolicy": true, "RestrictPublicBuckets": true }, "OwnershipControls": { "Rules": [{ "ObjectOwnership": "BucketOwnerEnforced" }] }, "BucketEncryption": { "ServerSideEncryptionConfiguration": [{ "ServerSideEncryptionByDefault": { "SSEAlgorithm": "AES256" } }] }, "LifecycleConfiguration": { "Rules": [{ "Id": "ExpireBootstrap", "Status": "Enabled", "ExpirationInDays": 7, "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 1 } }] }, "Tags": [{ "Key": "Project", "Value": { "Ref": "Project" } }] } },
+    "BootstrapBucketPolicy": { "Type": "AWS::S3::BucketPolicy", "Properties": { "Bucket": { "Ref": "BootstrapBucket" }, "PolicyDocument": { "Version": "2012-10-17", "Statement": [{ "Effect": "Deny", "Principal": "*", "Action": "s3:*", "Resource": [{ "Fn::GetAtt": ["BootstrapBucket", "Arn"] }, { "Fn::Sub": "${BootstrapBucket.Arn}/*" }], "Condition": { "Bool": { "aws:SecureTransport": "false" } } }] } } },
+    "ControlRole": { "Type": "AWS::IAM::Role", "Properties": { "AssumeRolePolicyDocument": { "Version": "2012-10-17", "Statement": [{ "Effect": "Allow", "Principal": { "Service": "ec2.amazonaws.com" }, "Action": "sts:AssumeRole" }] }, "Policies": [{ "PolicyName": "PilotManagementOnly", "PolicyDocument": { "Version": "2012-10-17", "Statement": [{ "Effect": "Allow", "Action": ["ssm:DescribeAssociation", "ssm:GetDocument", "ssm:DescribeDocument", "ssm:ListAssociations", "ssm:ListInstanceAssociations", "ssm:UpdateAssociationStatus", "ssm:UpdateInstanceAssociationStatus", "ssm:UpdateInstanceInformation"], "Resource": "*" }, { "Effect": "Allow", "Action": ["ssmmessages:CreateControlChannel", "ssmmessages:CreateDataChannel", "ssmmessages:OpenControlChannel", "ssmmessages:OpenDataChannel"], "Resource": "*" }, { "Effect": "Allow", "Action": ["ec2messages:AcknowledgeMessage", "ec2messages:DeleteMessage", "ec2messages:FailMessage", "ec2messages:GetEndpoint", "ec2messages:GetMessages", "ec2messages:SendReply"], "Resource": "*" }, { "Effect": "Allow", "Action": "s3:GetObject", "Resource": { "Fn::Sub": "${BootstrapBucket.Arn}/bootstrap/*" } }] } }], "Tags": [{ "Key": "Project", "Value": { "Ref": "Project" } }] } },
+    "ControlProfile": { "Type": "AWS::IAM::InstanceProfile", "Properties": { "Roles": [{ "Ref": "ControlRole" }] } },
+    "Control": { "Type": "AWS::EC2::Instance", "DependsOn": ["InternetRoute", "SubnetRoute"], "Properties": {
+      "ImageId": { "Ref": "UbuntuImage" }, "InstanceType": "t3.medium", "IamInstanceProfile": { "Ref": "ControlProfile" }, "CreditSpecification": { "CPUCredits": "standard" }, "MetadataOptions": { "HttpTokens": "required", "HttpPutResponseHopLimit": 1, "HttpEndpoint": "enabled", "HttpProtocolIpv6": "disabled", "InstanceMetadataTags": "disabled" },
+      "NetworkInterfaces": [{ "DeviceIndex": "0", "AssociatePublicIpAddress": true, "SubnetId": { "Ref": "Subnet" }, "PrivateIpAddress": "10.88.0.10", "GroupSet": [{ "Ref": "ControlSecurityGroup" }] }],
+      "BlockDeviceMappings": [{ "DeviceName": "/dev/sda1", "Ebs": { "VolumeType": "gp3", "VolumeSize": 40, "Encrypted": true, "DeleteOnTermination": true } }],
+      "UserData": { "Fn::Base64": "#!/bin/bash\nset -euo pipefail\nexport DEBIAN_FRONTEND=noninteractive\napt-get update\napt-get install -y ca-certificates curl jq python3 nftables openssl unzip conntrack socat\nif ! snap list amazon-ssm-agent >/dev/null 2>&1; then snap install amazon-ssm-agent --classic; fi\nsystemctl enable --now snap.amazon-ssm-agent.amazon-ssm-agent.service\ninstall -d -m 0700 /opt/uniqassess-bootstrap\ntouch /opt/uniqassess-bootstrap/cloud-init-ready\n" },
+      "Tags": [{ "Key": "Name", "Value": { "Fn::Sub": "${Project}-control" } }, { "Key": "Project", "Value": { "Ref": "Project" } }, { "Key": "Role", "Value": "lab-control" }]
+    } },
+    "Worker": { "Type": "AWS::EC2::Instance", "DependsOn": ["InternetRoute", "SubnetRoute"], "Properties": {
+      "ImageId": { "Ref": "UbuntuImage" }, "InstanceType": "t3.large", "KeyName": { "Ref": "WorkerKeyName" }, "CreditSpecification": { "CPUCredits": "standard" }, "MetadataOptions": { "HttpTokens": "required", "HttpPutResponseHopLimit": 1, "HttpEndpoint": { "Ref": "WorkerMetadataEndpoint" }, "HttpProtocolIpv6": "disabled", "InstanceMetadataTags": "disabled" },
+      "NetworkInterfaces": [{ "DeviceIndex": "0", "AssociatePublicIpAddress": true, "SubnetId": { "Ref": "Subnet" }, "PrivateIpAddress": "10.88.0.20", "GroupSet": [{ "Ref": "WorkerSecurityGroup" }] }],
+      "BlockDeviceMappings": [{ "DeviceName": "/dev/sda1", "Ebs": { "VolumeType": "gp3", "VolumeSize": 40, "Encrypted": true, "DeleteOnTermination": true } }],
+      "UserData": { "Fn::Base64": "#!/bin/bash\nset -euo pipefail\nexport DEBIAN_FRONTEND=noninteractive\napt-get update\napt-get install -y ca-certificates curl jq python3 nftables openssl gnupg conntrack socat\nsystemctl disable --now snap.amazon-ssm-agent.amazon-ssm-agent.service 2>/dev/null || true\ninstall -d -m 0700 /opt/uniqassess-bootstrap\ntouch /opt/uniqassess-bootstrap/cloud-init-ready\n" },
+      "Tags": [{ "Key": "Name", "Value": { "Fn::Sub": "${Project}-sandbox" } }, { "Key": "Project", "Value": { "Ref": "Project" } }, { "Key": "Role", "Value": "lab-sandbox" }]
+    } },
+    "ControlAddress": { "Type": "AWS::EC2::EIP", "DependsOn": "InternetAttachment", "Properties": { "Domain": "vpc", "InstanceId": { "Ref": "Control" }, "Tags": [{ "Key": "Project", "Value": { "Ref": "Project" } }] } }
+  },
+  "Outputs": {
+    "ControlInstanceId": { "Value": { "Ref": "Control" } },
+    "ControlRoleName": { "Value": { "Ref": "ControlRole" } },
+    "ControlSecurityGroupId": { "Value": { "Ref": "ControlSecurityGroup" } },
+    "WorkerInstanceId": { "Value": { "Ref": "Worker" } },
+    "ControlPublicIp": { "Value": { "Ref": "ControlAddress" } },
+    "ControlPrivateIp": { "Value": "10.88.0.10" },
+    "WorkerPrivateIp": { "Value": "10.88.0.20" },
+    "BootstrapBucketName": { "Value": { "Ref": "BootstrapBucket" } },
+    "VpcId": { "Value": { "Ref": "Vpc" } },
+    "WorkerMetadataEndpoint": { "Value": { "Ref": "WorkerMetadataEndpoint" } }
+  }
+}

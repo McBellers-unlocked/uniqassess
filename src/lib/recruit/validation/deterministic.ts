@@ -1,4 +1,5 @@
 import { getAssessmentModePolicy } from "../assessment-modes";
+import { labConfigIssue } from "../kubernetes-lab-config";
 import type { BlueprintRow, DeterministicCheck, ValidationFinding } from "./types";
 
 type ScenarioInput = {
@@ -11,7 +12,7 @@ type ScenarioInput = {
   tasks: Array<{
     id: string; number: number; kind: string; title: string; briefMarkdown: string;
     totalMarks: number; systemPrompt?: string | null; exhibitId?: string | null; rubric?: unknown;
-    emails?: unknown[]; chatScripts?: unknown[];
+    emails?: unknown[]; chatScripts?: unknown[]; config?: unknown;
   }>;
   criteria: Array<{
     id: string; code: string; name: string; observableBehaviours: unknown;
@@ -116,6 +117,12 @@ export function runDeterministicChecks(scenario: ScenarioInput): {
 
   const policy = getAssessmentModePolicy(scenario.assessmentMode);
   add({ id: "mode-policy", passed: Boolean(policy), severity: "blocker", label: "Declared mode policy", detail: `${policy.label} policy resolved.` });
+
+  const invalidLabs = scenario.tasks.filter((task) => labConfigIssue(task.config, task.kind));
+  add(
+    { id: "kubernetes-lab-config", passed: invalidLabs.length === 0, severity: "blocker", label: "Practical lab configuration", detail: invalidLabs.length ? invalidLabs.map((t) => `Task ${t.number}: ${labConfigIssue(t.config, t.kind)}`).join("; ") : "All configured labs use a supported versioned template." },
+    finding("det-kubernetes-lab-config", "time_feasibility", "blocker", "Invalid practical lab configuration", "The lab could not be delivered consistently.", "Select a supported Kubernetes lab template on a written task.", invalidLabs.map((t) => t.id))
+  );
 
   const scored = scenario.tasks.filter((task) => task.totalMarks > 0);
   const missingRubric = scored.filter((task) => Object.keys(categories(task.rubric)).length === 0);

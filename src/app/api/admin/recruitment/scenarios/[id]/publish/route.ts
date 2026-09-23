@@ -6,6 +6,8 @@ import {
 } from "@/lib/admin-auth";
 import { evaluatePublicationReadiness } from "@/lib/recruit/validation/publication-readiness";
 import { getScenarioContentHash } from "@/lib/recruit/scenario-content-hash";
+import { labConfigIssue, taskKubernetesLab } from "@/lib/recruit/kubernetes-lab-config";
+import { resolveRunnerSettings } from "@/lib/recruit/kubernetes-lab-runner";
 
 export const dynamic = "force-dynamic";
 
@@ -88,8 +90,15 @@ export async function POST(
   if (scenario.tasks.length === 0) {
     errors.push("Scenario must have at least one task.");
   }
+  const labRunnerAvailable = scenario.tasks.some((t) => taskKubernetesLab(t.config))
+    ? Boolean(await resolveRunnerSettings().catch(() => null)) : false;
   scenario.tasks.forEach((t, idx) => {
     const prefix = `Task ${t.number} (${t.title || `#${idx + 1}`})`;
+    const labIssue = labConfigIssue(t.config, t.kind);
+    if (labIssue) errors.push(`${prefix}: ${labIssue}`);
+    if (taskKubernetesLab(t.config) && !labRunnerAvailable) {
+      errors.push(`${prefix}: configure and enable the dedicated Kubernetes lab runner before publishing a practical lab.`);
+    }
     if (!t.title?.trim()) errors.push(`${prefix}: title required`);
     if (!t.briefMarkdown?.trim()) errors.push(`${prefix}: brief required`);
     if (t.totalMarks == null || t.totalMarks < 0) {

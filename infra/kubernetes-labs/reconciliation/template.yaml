@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Trusted app evidence reconciler outside the candidate lab VPC
+Parameters:
+  FunctionName:
+    Type: String
+    Default: uniqassess-lab-reconcile-pilot
+  DatabaseSecretArn:
+    Type: String
+  RunnerConfigSecretArn:
+    Type: String
+  CodeBucket:
+    Type: String
+  CodeKey:
+    Type: String
+  ScheduleEnabled:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+Conditions:
+  ScheduleOn: !Equals [!Ref ScheduleEnabled, 'true']
+Resources:
+  Logs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${FunctionName}
+      RetentionInDays: 30
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: lambda.amazonaws.com}
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ReconciliationSecretsAndLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: [!Ref DatabaseSecretArn, !Ref RunnerConfigSecretArn]
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${FunctionName}:*
+  Function:
+    Type: AWS::Lambda::Function
+    DependsOn: Logs
+    Properties:
+      FunctionName: !Ref FunctionName
+      Runtime: nodejs22.x
+      Architectures: [x86_64]
+      Handler: index.handler
+      Role: !GetAtt Role.Arn
+      Timeout: 55
+      MemorySize: 512
+      ReservedConcurrentExecutions: 1
+      Code: {S3Bucket: !Ref CodeBucket, S3Key: !Ref CodeKey}
+      Environment:
+        Variables:
+          NODE_ENV: production
+          APP_REGION: !Ref AWS::Region
+          KUBERNETES_LABS_ENABLED: 'false'
+          LAB_RECONCILE_DATABASE_SECRET_ARN: !Ref DatabaseSecretArn
+          KUBERNETES_LAB_CONFIG_SECRET_ARN: !Ref RunnerConfigSecretArn
+  InvocationPolicy:
+    Type: AWS::Lambda::EventInvokeConfig
+    Properties:
+      FunctionName: !Ref Function
+      Qualifier: '$LATEST'
+      MaximumRetryAttempts: 0
+      MaximumEventAgeInSeconds: 60
+  Schedule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: rate(1 minute)
+      State: !If [ScheduleOn, ENABLED, DISABLED]
+      Targets:
+        - Id: Reconcile
+          Arn: !GetAtt Function.Arn
+          RetryPolicy: {MaximumRetryAttempts: 0, MaximumEventAgeInSeconds: 60}
+  SchedulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Function
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt Schedule.Arn
+Outputs:
+  FunctionArn:
+    Value: !GetAtt Function.Arn
+  ScheduleArn:
+    Value: !GetAtt Schedule.Arn

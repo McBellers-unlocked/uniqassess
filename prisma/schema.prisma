@@ -230,6 +230,7 @@ model RecruitmentCandidate {
   activityEvents               RecruitmentActivityEvent[]
   emailResponses               RecruitmentEmailResponse[]
   evidenceBoard                RecruitmentCandidateEvidence[]
+  labSessions                  RecruitmentLabSession[]
   defence                      RecruitmentCandidateDefence?
   psychometricRaterAssignments RecruitmentPsychometricRaterAssignment[]
 
@@ -237,6 +238,47 @@ model RecruitmentCandidate {
   @@unique([assessmentId, email])
   @@index([assessmentId])
   @@map("recruitment_candidates")
+}
+
+// Direct candidate-operated lab evidence; separate from AI interactions and scores.
+model RecruitmentLabSession {
+  id          String               @id @default(cuid())
+  candidateId String               @map("candidate_id")
+  candidate   RecruitmentCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  taskNumber  Int                  @map("task_number")
+  templateId  String               @map("template_id")
+  status      String               @default("starting")
+  expiresAt   DateTime             @map("expires_at")
+  error       String?              @db.Text
+  snapshot    Json?
+  cleanupCompletedAt DateTime?     @map("cleanup_completed_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+  commands    RecruitmentLabCommand[]
+
+  @@unique([candidateId, taskNumber])
+  @@index([status, expiresAt])
+  @@map("recruitment_lab_sessions")
+}
+
+model RecruitmentLabCommand {
+  id         String                @id @default(uuid()) @db.Uuid
+  sessionId  String                @map("session_id")
+  session    RecruitmentLabSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  requestId  String                @map("request_id") @db.Uuid
+  command    String                @db.Text
+  status     String                @default("queued")
+  stdout     String                @default("") @db.Text
+  stderr     String                @default("") @db.Text
+  exitCode   Int?                  @map("exit_code")
+  truncated  Boolean               @default(false)
+  createdAt  DateTime              @default(now()) @map("created_at")
+  startedAt  DateTime?             @map("started_at")
+  finishedAt DateTime?             @map("finished_at")
+
+  @@unique([sessionId, requestId])
+  @@index([sessionId, createdAt])
+  @@map("recruitment_lab_commands")
 }
 
 model RecruitmentResponse {

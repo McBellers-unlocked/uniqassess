@@ -9,6 +9,7 @@ import { getScenarioForAssessment } from "@/lib/recruit/scenario-loader";
 import { isChatTask, isEmailInboxTask } from "@/lib/recruit/types";
 import { analyzeTextReuse, type ReuseResult } from "@/lib/recruit/textReuse";
 import { criteriaForAssessment } from "@/lib/recruit/assessment-versions";
+import { reconcileCandidateLabs } from "@/lib/recruit/kubernetes-lab-service";
 
 export const dynamic = "force-dynamic";
 
@@ -121,8 +122,41 @@ export async function GET(
         },
       };
     }
-    return { number: t.number, kind: t.kind, title: t.title };
+    return { number: t.number, kind: t.kind, title: t.title, labConfigured: Boolean(t.kubernetesLab) };
   });
+
+  // Select only evidence fields. Provider identifiers, credentials and candidate
+  // identity must never reach the blind marking interface.
+  await reconcileCandidateLabs(c.id).catch(() => {});
+  const labSessionRows = await prisma.recruitmentLabSession.findMany({
+    where: { candidateId: c.id },
+    orderBy: [{ taskNumber: "asc" }, { createdAt: "asc" }],
+    select: {
+      id: true,
+      taskNumber: true,
+      templateId: true,
+      status: true,
+      expiresAt: true,
+      createdAt: true,
+      updatedAt: true,
+      error: true,
+      snapshot: true,
+      cleanupCompletedAt: true,
+      commands: {
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        select: {
+          id: true, command: true, status: true, stdout: true, stderr: true,
+          exitCode: true, truncated: true, createdAt: true, startedAt: true, finishedAt: true,
+        },
+      },
+    },
+  });
+  const labSessions = labSessionRows.map((session) => ({
+    ...session,
+    // Operational errors can contain provider details; markers need only the
+    // fact that delivery failed. Recorded command output remains evidence.
+    error: session.error ? "The lab encountered a runtime problem. Consider this when reviewing the evidence." : null,
+  }));
 
   const emailResponses = await prisma.recruitmentEmailResponse.findMany({
     where: { candidateId: c.id },
@@ -173,6 +207,7 @@ export async function GET(
     scenarioTasks,
     responses: c.responses,
     interactions: c.interactions,
+    labSessions,
     emailResponses,
     activityEvents: c.activityEvents,
     evidenceBoard: c.evidenceBoard,

@@ -14,6 +14,8 @@
     "db:seed": "npx tsx prisma/seed.ts",
     "demo:technical": "npx tsx scripts/seed-technical-demo.ts",
     "demo:technical:verify-worker": "npx tsx scripts/verify-technical-worker.ts",
+    "labs:reconcile": "node --import tsx scripts/reconcile-kubernetes-labs.ts",
+    "labs:reconcile:build": "node scripts/build-lab-reconciler.mjs",
     "db:studio": "npx prisma studio"
   },
   "dependencies": {

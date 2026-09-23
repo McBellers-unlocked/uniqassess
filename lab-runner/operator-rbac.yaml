@@ -1,0 +1,93 @@
+# Apply only to the dedicated assessment cluster after reviewing the runbook.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: uniqassess-control
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lab-broker
+  namespace: uniqassess-control
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: uniqassess-lab-broker
+rules:
+  - apiGroups: [""]
+    resources: [namespaces]
+    verbs: [get, list, create, delete]
+  - apiGroups: [node.k8s.io]
+    resources: [runtimeclasses]
+    verbs: [get]
+  - apiGroups: [admissionregistration.k8s.io]
+    resources: [validatingadmissionpolicies, validatingadmissionpolicybindings]
+    verbs: [get]
+  - apiGroups: [""]
+    resources: [pods, services, configmaps]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [""]
+    resources: [pods/log, events, endpoints]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [pods/exec]
+    verbs: [create]
+  - apiGroups: [""]
+    resources: [resourcequotas, limitranges, serviceaccounts]
+    verbs: [get, create, update, patch]
+  - apiGroups: [apps]
+    resources: [deployments, deployments/scale, replicasets]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [discovery.k8s.io]
+    resources: [endpointslices]
+    verbs: [get, list, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [networkpolicies]
+    verbs: [get, create, update, patch]
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [roles, rolebindings]
+    verbs: [get, create, update, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: uniqassess-lab-broker
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: uniqassess-lab-broker
+subjects:
+  - kind: ServiceAccount
+    name: lab-broker
+    namespace: uniqassess-control
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lab-janitor
+  namespace: uniqassess-control
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: uniqassess-lab-janitor
+rules:
+  - apiGroups: [""]
+    resources: [namespaces]
+    verbs: [get, list, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: uniqassess-lab-janitor
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: uniqassess-lab-janitor
+subjects:
+  - kind: ServiceAccount
+    name: lab-janitor
+    namespace: uniqassess-control

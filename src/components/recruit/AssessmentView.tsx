@@ -11,6 +11,7 @@ import { AssessmentModeBadge } from "./AssessmentModeBadge";
 import KnowledgeEvidenceCard from "./KnowledgeEvidenceCard";
 import CandidateEvidenceBoard, { type EvidenceBoardItem } from "./CandidateEvidenceBoard";
 import ToolUseDeclaration, { type ToolDeclarationValue } from "./ToolUseDeclaration";
+import KubernetesLabPanel from "./KubernetesLabPanel";
 import type { KnowledgeSystemResponse } from "@/lib/recruit/knowledge-response-schema";
 
 interface TaskCfg {
@@ -23,6 +24,7 @@ interface TaskCfg {
   exhibitSourceId: string;
   totalMarks: number;
   codeExecutionEnabled: boolean;
+  kubernetesLab?: { templateId: string; title: string; instructions: string } | null;
   deliverableLabel: string;
   deliverablePlaceholder: string;
 }
@@ -140,6 +142,8 @@ export default function AssessmentView({
   const tasks = initial.scenario.tasks;
   const [activeTask, setActiveTask] = useState<number>(1);
   const activeTaskCfg = tasks.find((t) => t.number === activeTask) ?? tasks[0];
+  const [workViews, setWorkViews] = useState<Record<number, "deliverable" | "lab">>({});
+  const labOpen = Boolean(activeTaskCfg.kubernetesLab) && workViews[activeTask] === "lab";
 
   // In-assessment AI branding. Falls back to the IDSC defaults so the
   // existing built-ins (FAM/CSO/APLO) render exactly as before; scenarios set
@@ -678,9 +682,8 @@ export default function AssessmentView({
         </div>
       </header>
 
-      {/* Document-first workspace: the memo never disappears. Sources and AI
-          are supporting drawers; on standard screens only one is pinned at a
-          time so the writing surface keeps a comfortable measure. */}
+      {/* Sources and AI support the central deliverable or practical lab.
+          The memo stays mounted when switching views so draft work is retained. */}
       <div className="flex-1 min-h-0 flex overflow-hidden relative bg-uq-bg2">
         {(sourceOpen || aiOpen) && (
           <button
@@ -800,14 +803,14 @@ export default function AssessmentView({
               {(sourceOpen || aiOpen) && (
                 <button
                   type="button"
-                  onClick={() => { setSourceOpen(false); setAiOpen(false); }}
+                  onClick={() => { setSourceOpen(false); setAiOpen(false); setWorkViews((previous) => ({ ...previous, [activeTask]: "deliverable" })); }}
                   className="hidden rounded-lg px-3 py-1.5 text-xs font-medium text-uq-3 transition-colors hover:bg-uq-elev2 hover:text-uq sm:inline-flex focus-visible:outline-none focus-visible:[box-shadow:var(--uq-focus-ring)]"
                 >
                   Focus writing
                 </button>
               )}
             </div>
-            <span className="hidden font-mono text-[10px] uppercase tracking-[0.14em] text-uq-3 lg:inline">Memo always stays open</span>
+            <span className="hidden font-mono text-[10px] uppercase tracking-[0.14em] text-uq-3 lg:inline">{activeTaskCfg.kubernetesLab ? "Your work is recorded" : "Memo always stays open"}</span>
           </div>
 
           {(() => {
@@ -829,7 +832,27 @@ export default function AssessmentView({
             );
           })()}
 
-          <section className="flex flex-1 min-h-0 flex-col overflow-hidden bg-uq-elev1">
+          {activeTaskCfg.kubernetesLab && (
+            <div className="flex flex-shrink-0 gap-2 border-b border-uq-faint px-4 py-2" aria-label="Work area">
+              <ViewTab active={!labOpen} onClick={() => setWorkViews((previous) => ({ ...previous, [activeTask]: "deliverable" }))} label="Written deliverable" />
+              <ViewTab active={labOpen} onClick={() => setWorkViews((previous) => ({ ...previous, [activeTask]: "lab" }))} label="Kubernetes lab" />
+            </div>
+          )}
+
+          {activeTaskCfg.kubernetesLab && (
+            <div className={`${labOpen ? "flex" : "hidden"} min-h-0 flex-1 flex-col`}>
+              <KubernetesLabPanel
+                key={`${token}:${activeTask}`}
+                token={token}
+                taskNumber={activeTask}
+                title={activeTaskCfg.kubernetesLab.title}
+                instructions={activeTaskCfg.kubernetesLab.instructions}
+                disabled={submitting || submittedRef.current || Boolean(initial.candidate.submittedAt) || Boolean(initial.candidate.workLockedAt) || timer.expired}
+              />
+            </div>
+          )}
+
+          <section className={`${labOpen ? "hidden" : "flex"} flex-1 min-h-0 flex-col overflow-hidden bg-uq-elev1`}>
             <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-uq-faint bg-uq-glass-subtle px-4 py-2.5">
               <div className="min-w-0">
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-uq-accent">Your deliverable · Task {activeTask}</div>

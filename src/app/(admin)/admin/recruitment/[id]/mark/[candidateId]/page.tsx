@@ -10,6 +10,7 @@ import remarkGfm from "remark-gfm";
 import type { ReuseResult } from "@/lib/recruit/textReuse";
 import { AssessmentModeBadge } from "@/components/recruit/AssessmentModeBadge";
 import WorkProvenanceTimeline from "@/components/recruit/WorkProvenanceTimeline";
+import LabEvidence, { type LabSessionEvidence } from "@/components/recruit/LabEvidence";
 
 interface Interaction { id: string; sequenceNum: number; taskNumber: number; timestamp: string; actor: string; content: string; structuredPayload?: unknown; schemaVersion?: string | null; }
 interface ActivityEvent {
@@ -47,6 +48,7 @@ interface ScenarioPersona {
 interface ScenarioTask {
   number: number; kind: "memo_ai" | "email_inbox" | "chat"; title: string;
   emails?: ScenarioEmail[]; persona?: ScenarioPersona;
+  labConfigured?: boolean;
 }
 interface EmailResponseRow {
   emailId: string; action: string; replyBody: string | null;
@@ -65,6 +67,7 @@ interface MarkData {
   scenarioTasks: ScenarioTask[];
   responses: ResponseRow[];
   interactions: Interaction[];
+  labSessions: LabSessionEvidence[];
   emailResponses: EmailResponseRow[];
   activityEvents: ActivityEvent[];
   evidenceBoard: EvidenceRow[];
@@ -77,7 +80,7 @@ interface MarkData {
 // The IPAC Knowledge System's brand mark (mirrors the candidate-facing AI orb
 // in AssessmentView) — so the marker recognises the same speaker the candidate saw.
 const ORB_GRADIENT = "linear-gradient(135deg, var(--uq-accent), var(--uq-persona))";
-type ReviewView = "response" | "integrity" | "dialogue" | "defence";
+type ReviewView = "response" | "integrity" | "dialogue" | "defence" | "lab";
 
 export default function MarkCandidatePage() {
   const params = useParams<{ id: string; candidateId: string }>();
@@ -198,6 +201,8 @@ export default function MarkCandidatePage() {
   const responseForActive = data.responses.find((r) => r.taskNumber === activeTask);
   const rubricTask = data.rubric?.tasks[activeTask];
   const trailForActive = data.interactions.filter((i) => i.taskNumber === activeTask);
+  const labSessionsForActive = (data.labSessions ?? []).filter((session) => session.taskNumber === activeTask);
+  const hasLabForActive = activeScenarioTask?.labConfigured || labSessionsForActive.length > 0;
   const candidateMsgCount = trailForActive.filter((i) => i.actor === "candidate").length;
   const aiMsgCount = trailForActive.length - candidateMsgCount;
   const activityForActive = (data.activityEvents ?? []).filter(
@@ -272,6 +277,7 @@ export default function MarkCandidatePage() {
               <ReviewTab active={reviewView === "response"} onClick={() => setReviewView("response")} label="Response" />
               <ReviewTab active={reviewView === "integrity"} onClick={() => setReviewView("integrity")} label="Evidence & integrity" />
               <ReviewTab active={reviewView === "dialogue"} onClick={() => setReviewView("dialogue")} label={`AI dialogue · ${candidateMsgCount}`} />
+              {hasLabForActive && <ReviewTab active={reviewView === "lab"} onClick={() => setReviewView("lab")} label="Lab evidence" />}
               {data.defence && <ReviewTab active={reviewView === "defence"} onClick={() => setReviewView("defence")} label="Defence" />}
             </nav>
           )}
@@ -322,6 +328,8 @@ export default function MarkCandidatePage() {
                   <WorkProvenanceTimeline events={data.activityEvents} interactions={data.interactions} evidence={data.evidenceBoard} taskNumber={activeTask} />
                 </>
               )}
+
+              {reviewView === "lab" && <LabEvidence sessions={labSessionsForActive} taskNumber={activeTask} />}
 
               {reviewView === "defence" && (
                 data.defence ? (

@@ -27,6 +27,7 @@ import {
   type AssessmentVersionSnapshot,
 } from "./assessment-versions";
 import { taskHasManagedCodeExecution } from "./code-execution";
+import { taskKubernetesLab } from "./kubernetes-lab-config";
 
 export async function getScenarioForAssessment(
   assessment: Pick<RecruitmentAssessment, "scenarioId" | "customScenarioId"> &
@@ -197,6 +198,7 @@ export function materialiseScenarioSnapshot(
           totalMarks: task.totalMarks,
           systemPrompt: task.systemPrompt ?? "",
           codeExecutionEnabled: taskHasManagedCodeExecution(task.config),
+          kubernetesLab: taskKubernetesLab(task.config),
           exhibitHtml: exhibit?.html ?? "",
           exhibitTitle: exhibit?.title ?? "",
           exhibitSourceId: exhibit?.sourceId ?? exhibit?.id ?? `task-${task.number}-exhibit`,
@@ -272,6 +274,7 @@ function materialiseTask(task: DbScenarioRow["tasks"][number]): RecruitTaskConfi
         totalMarks: task.totalMarks,
         systemPrompt: task.systemPrompt ?? "",
         codeExecutionEnabled: taskHasManagedCodeExecution(task.config),
+        kubernetesLab: taskKubernetesLab(task.config),
         exhibitHtml: task.exhibit?.html ?? "",
         exhibitTitle: task.exhibit?.title ?? "",
         exhibitSourceId: task.exhibit?.sourceId ?? task.exhibit?.id ?? `task-${task.number}-exhibit`,
@@ -345,6 +348,7 @@ function materialiseTask(task: DbScenarioRow["tasks"][number]): RecruitTaskConfi
         totalMarks: task.totalMarks,
         systemPrompt: task.systemPrompt ?? "",
         codeExecutionEnabled: taskHasManagedCodeExecution(task.config),
+        kubernetesLab: taskKubernetesLab(task.config),
         exhibitHtml: task.exhibit?.html ?? "",
         exhibitTitle: task.exhibit?.title ?? "",
         exhibitSourceId: task.exhibit?.sourceId ?? task.exhibit?.id ?? `task-${task.number}-exhibit`,
