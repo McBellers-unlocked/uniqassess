@@ -105,17 +105,20 @@ async function main() {
   if (!bootstrapBefore.DeletedDate) {
     const deleted = aws('secretsmanager', 'delete-secret', { SecretId: bootstrapArn, RecoveryWindowInDays: 7 });
     requireCheck(deleted.ARN === bootstrapArn && deleted.DeletionDate, 'Unexpected secret deletion response.');
+    state.bootstrapSecretRecoveryWindowInDays = 7;
+    state.bootstrapSecretDeleteResponseDeletionDate = deleted.DeletionDate;
+    save(state);
   }
   const bootstrapAfter = aws('secretsmanager', 'describe-secret', { SecretId: bootstrapArn });
   const runnerAfter = aws('secretsmanager', 'describe-secret', { SecretId: runnerArn });
   requireCheck(bootstrapAfter.DeletedDate, 'Bootstrap secret deletion was not scheduled.');
   requireCheck(runnerAfter.ARN === runnerArn && !runnerAfter.DeletedDate &&
     hash(runnerBefore.VersionIdsToStages) === hash(runnerAfter.VersionIdsToStages), 'Runner Secret changed during cleanup; inspect metadata.');
-  state.bootstrapSecretDeletionDate = bootstrapAfter.DeletedDate;
+  state.bootstrapSecretDescribeDeletedDate = bootstrapAfter.DeletedDate;
   state.runnerSecretPreserved = true;
   state.managementPolicyPreserved = true;
   state.completedAt = new Date().toISOString(); save(state);
-  console.log(JSON.stringify({ completed: true, bootstrapPolicyRemoved: true, bootstrapSecretDeletionDate: bootstrapAfter.DeletedDate,
+  console.log(JSON.stringify({ completed: true, bootstrapPolicyRemoved: true, bootstrapSecretDescribeDeletedDate: bootstrapAfter.DeletedDate,
     runnerSecretPreserved: true, managementPolicyPreserved: true, keyPairRegistrationPreserved: true, evidence }));
 }
 
