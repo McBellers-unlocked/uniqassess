@@ -1,0 +1,47 @@
+{
+  "cleanup": {
+    "control": "i-09fa493b2b45c84af",
+    "worker": "i-0771b03a4cdc72d2c",
+    "role": "uniqassess-kubernetes-pilot-ControlRole-3tiQo5GwADk9",
+    "mode": "--execute-after-acceptance",
+    "managementPolicyHash": "b835d6b70a284b40c19a941dbbb97862a1da85b76e3ebff5480943518fb372a5",
+    "hostCommandId": "ee1805ec-8d2f-4f2c-a83c-4b26e8a53f7b",
+    "hostSourceHash": "ae1de05c70b42215a3c130080e13dcfd7048227717f3f832bc1e40319106d8ec",
+    "hostResult": {
+      "mode": "--execute-after-acceptance",
+      "fingerprint": "SHA256:Ps56DR68SrVYycI2q0L/uWLU/CJe2QiTHWRL04loQn0",
+      "worker": {
+        "matchingBootstrapKeys": 1,
+        "removed": true,
+        "otherLinesPreserved": true
+      },
+      "privateKeyPresent": false,
+      "runnerSecretPreserved": true,
+      "runnerSecretServerSideDryRunAccepted": true,
+      "runnerSecretLastAppliedPreviouslyPresent": true,
+      "runnerSecretLastAppliedRemoved": true,
+      "activeLabNamespaces": 0,
+      "nodesReady": true,
+      "brokerReady": true
+    },
+    "hostComplete": true,
+    "bootstrapPolicyRemoved": true,
+    "runnerSecretPreserved": true,
+    "managementPolicyPreserved": true,
+    "completedAt": "2026-09-23T11:09:07.956Z",
+    "bootstrapSecretRecoveryWindowInDays": 7,
+    "bootstrapSecretDescribeDeletedDate": "2026-09-23T12:09:04.835000+01:00"
+  },
+  "postCleanupHealth": {
+    "commandId": "a2a66bee-155e-4d7b-ac95-3c5a300b2397",
+    "brokerTlsUnauthenticatedStatus": 401,
+    "brokerTlsAuthenticatedUnknownLabStatus": 404,
+    "appHomepageStatus": 200,
+    "brokerReadyReplicas": 1,
+    "nodesReady": true,
+    "activeLabNamespaceCount": 0,
+    "secretLastAppliedAnnotationPresent": false,
+    "controlPrivateKeyPresent": false,
+    "passed": true
+  }
+}

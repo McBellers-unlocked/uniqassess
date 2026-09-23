@@ -1,0 +1,490 @@
+{
+  "schemaVersion": 1,
+  "title": "UNIQassess Kubernetes pilot acceptance evidence",
+  "recordedAt": "2026-09-23T11:08:59.563Z",
+  "scope": "Synthetic candidate records and disposable labs on the dedicated Kubernetes pilot; observed results for this deployment, not a general security or availability certification.",
+  "humanAssessmentMarksCreated": false,
+  "passed": true,
+  "pending": [],
+  "deployment": {
+    "region": "eu-west-1",
+    "applicationRevision": "4431c87",
+    "amplifyJob": 72,
+    "applicationDeployPassed": true,
+    "publicOriginValidationPassed": true,
+    "migration": "20260923120000_candidate_kubernetes_labs",
+    "candidateCapacity": 2
+  },
+  "databaseSchema": {
+    "observedAt": "2026-09-23T10:49:52.119Z",
+    "readOnly": true,
+    "source": "restricted_database_role",
+    "passed": true,
+    "tables": [
+      {
+        "model": "RecruitmentLabSession",
+        "table": "recruitment_lab_sessions",
+        "prismaScalarFields": 11,
+        "databaseColumns": 11
+      },
+      {
+        "model": "RecruitmentLabCommand",
+        "table": "recruitment_lab_commands",
+        "prismaScalarFields": 12,
+        "databaseColumns": 12
+      }
+    ],
+    "mismatches": [],
+    "prismaSessionSelectPassed": true,
+    "prismaNestedCommandsSelectPassed": true,
+    "prismaDirectCommandSelectPassed": true,
+    "sessionRowsObserved": 0,
+    "directCommandRowsObserved": 0
+  },
+  "applicationApi": {
+    "suite": "synthetic_bravo_application_api",
+    "passed": true,
+    "seconds": 22.77,
+    "checks": [
+      {
+        "check": "start_synthetic_bravo",
+        "passed": true,
+        "seconds": 0.28
+      },
+      {
+        "check": "session_task_and_origin_boundaries",
+        "passed": true,
+        "seconds": 0.49,
+        "missingCookieDenied": true,
+        "alphaTokenWithBravoCookieDenied": true,
+        "invalidTaskDenied": true,
+        "foreignOriginDenied": true
+      },
+      {
+        "check": "live_lab_ready",
+        "passed": true,
+        "seconds": 6.48,
+        "sessionId": "cmudznuya000nkz1eczmv6zbh"
+      },
+      {
+        "check": "recorded_output_exit_status_and_workspace_persistence",
+        "passed": true,
+        "seconds": 3.43,
+        "workspacePersisted": true,
+        "stdoutRecorded": true,
+        "stderrRecorded": true,
+        "nonzeroExitRecorded": true
+      },
+      {
+        "check": "request_id_and_concurrency",
+        "passed": true,
+        "seconds": 11.38,
+        "requestIdDeduplicated": true,
+        "changedCommandDenied": true,
+        "concurrentCommandDenied": true
+      },
+      {
+        "check": "submission_lockout_and_authenticated_evidence",
+        "passed": true,
+        "seconds": 0.62,
+        "closedStatus": "stopped",
+        "evidenceRecordsRetained": 4,
+        "lateCommandsDenied": true,
+        "missingCookieStillDenied": true
+      },
+      {
+        "check": "finally_submit_bravo",
+        "passed": true
+      }
+    ]
+  },
+  "brokerLifecycle": {
+    "suite": "live_broker_lifecycle",
+    "passed": true,
+    "seconds": 109.89,
+    "checks": [
+      {
+        "check": "delete_before_create_tombstone",
+        "passed": true,
+        "seconds": 2.14
+      },
+      {
+        "check": "idempotent_start_and_conflicting_expiry",
+        "passed": true,
+        "seconds": 0.03
+      },
+      {
+        "check": "command_retry_once_and_conflicting_text",
+        "passed": true,
+        "seconds": 6.24,
+        "singleActiveCommandEnforced": true
+      },
+      {
+        "check": "both_output_streams_truncated",
+        "passed": true,
+        "seconds": 0.54,
+        "retainedStdoutCharacters": 32768,
+        "retainedStderrCharacters": 32768
+      },
+      {
+        "check": "explicit_stop_cleanup_and_lockout",
+        "passed": true,
+        "seconds": 19.53,
+        "cleanupComplete": true,
+        "snapshotRetained": true
+      },
+      {
+        "check": "long_command_timeout_retires_and_cleans_lab",
+        "passed": true,
+        "seconds": 46.25,
+        "cleanupComplete": true,
+        "independentRetirement": true
+      },
+      {
+        "check": "stop_during_command",
+        "passed": true,
+        "seconds": 27.36,
+        "cleanupComplete": true,
+        "commandFailureRetained": true
+      },
+      {
+        "check": "finally_stop_all_labs",
+        "passed": true,
+        "labsTracked": 4,
+        "cleanupFailures": 0,
+        "cleanupConfirmed": 4
+      }
+    ]
+  },
+  "brokerRecovery": {
+    "passed": true,
+    "aggregation": "Three distinct recovery behaviors verified across two recorded executions; the completed idle and interrupted-command proofs were retained when only the janitor harness was rerun.",
+    "checks": [
+      {
+        "check": "idle_lab_survives_broker_restart",
+        "passed": true,
+        "seconds": 70.35,
+        "workspaceRetained": true,
+        "commandAndSqliteRetained": true,
+        "cleanupComplete": true
+      },
+      {
+        "check": "interrupted_command_fails_without_replay",
+        "passed": true,
+        "seconds": 31.99,
+        "commandFailedWithoutReplay": true,
+        "namespaceRemoved": true
+      },
+      {
+        "check": "independent_janitor_removes_expired_lab_while_broker_offline",
+        "passed": true,
+        "seconds": 122.74,
+        "brokerOfflineBeforeExpiry": true,
+        "brokerOfflineDuringRemoval": true,
+        "leaseSeconds": 90,
+        "namespaceRemovedSecondsAfterBrokerOffline": 77.68,
+        "expiredAndCleanupConfirmed": true,
+        "snapshotUnavailableReported": true
+      },
+      {
+        "check": "broker_restored_and_all_test_namespaces_removed",
+        "passed": true
+      }
+    ],
+    "sourceCommands": [
+      "7f15f8f2-4efe-4819-93c3-304b1540020c",
+      "887aa2fe-8d3e-44cc-9290-6269491b6b77"
+    ],
+    "harnessCorrections": [
+      "A normal rollout allows a 30-second termination grace, longer than a bounded command. The interruption probe uses a 1-second pod deletion grace without force deletion.",
+      "The janitor probe uses a 90-second lease, an unconditional pod-state read after deletion, and a 150-second bounded observation after the broker is confirmed offline.",
+      "Earlier harness attempts restored the broker and removed every tracked synthetic namespace. These attempts are not counted as passing checks."
+    ]
+  },
+  "bravoDatabasePersistence": {
+    "observedAt": "2026-09-23T10:59:17.726Z",
+    "readOnly": true,
+    "candidateStatus": "submitted",
+    "submittedAt": "2026-09-23T10:57:41.424Z",
+    "lab": {
+      "id": "cmudznuya000nkz1eczmv6zbh",
+      "status": "stopped",
+      "expiresAt": "2026-09-23T11:57:19.520Z",
+      "cleanupCompletedAt": "2026-09-23T10:58:44.180Z",
+      "hasError": false,
+      "snapshot": {
+        "present": true,
+        "capturedAt": "2026-09-23T10:57:43.817Z",
+        "characters": 32768,
+        "truncated": true,
+        "hasError": false
+      },
+      "commands": {
+        "total": 4,
+        "queued": 0,
+        "running": 0,
+        "completed": 4,
+        "failed": 0,
+        "truncated": 0,
+        "nonzeroExits": 1,
+        "missingExitCodes": 0,
+        "stdoutCharacters": 41,
+        "stderrCharacters": 50,
+        "maxStdoutCharacters": 17,
+        "maxStderrCharacters": 36,
+        "firstCreatedAt": "2026-09-23T10:57:26.845Z",
+        "firstStartedAt": "2026-09-23T10:57:26.871Z",
+        "lastFinishedAt": "2026-09-23T10:57:40.362Z",
+        "averageQueueMs": 27,
+        "averageExecutionMs": 2240,
+        "maxExecutionMs": 8247
+      },
+      "timing": {
+        "recordedLabLifetimeMs": 83938,
+        "cleanupAfterWorkLockMs": 62756,
+        "cleanupAfterExpiryMs": null,
+        "firstCommandStartAfterLabCreationMs": 6629
+      }
+    }
+  },
+  "alphaBrowser": {
+    "source": "Operator candidate and assessor browser observations",
+    "passed": true,
+    "candidate": {
+      "faultyReadinessPortObserved": 8081,
+      "repairedReadinessPort": 8080,
+      "faultyServiceSelectorObserved": "checkout-previous",
+      "repairedServiceSelector": "checkout",
+      "readyReplicasAfterRepair": 2,
+      "verifiedHttpStatus": 200,
+      "commandRecordsRetainedAfterReload": 3,
+      "workspacePersistenceVerifiedByFourthCommand": true,
+      "writtenResponseWords": 162,
+      "submitted": true
+    },
+    "assessor": {
+      "writtenResponseVisible": true,
+      "commandCount": 4,
+      "allExitCodesZero": true,
+      "outputsVisible": true,
+      "finalSnapshotVisible": true,
+      "snapshotTruncationExplicit": true,
+      "environmentRemovalConfirmedAt": "2026-09-23T11:00:09Z"
+    }
+  },
+  "browserClosedExpiry": {
+    "status": "passed",
+    "labId": "cmudzsk130017kz1e8qwha4rg",
+    "browserClosedAt": "2026-09-23T11:01:45.343Z",
+    "deadline": "2026-09-23T11:05:17.453Z",
+    "completedCommandsBeforeBrowserClosed": 1,
+    "candidateOrAssessorApiUsedBeforeExpiryProof": false,
+    "databaseObservation": {
+      "observedAt": "2026-09-23T11:06:44.052Z",
+      "readOnly": true,
+      "candidateStatus": "started",
+      "lab": {
+        "id": "cmudzsk130017kz1e8qwha4rg",
+        "status": "expired",
+        "expiresAt": "2026-09-23T11:05:17.453Z",
+        "cleanupCompletedAt": "2026-09-23T11:05:44.038Z",
+        "hasError": false,
+        "snapshot": {
+          "present": true,
+          "capturedAt": "2026-09-23T11:05:19.787Z",
+          "characters": 32768,
+          "truncated": true,
+          "hasError": false
+        },
+        "commands": {
+          "total": 1,
+          "queued": 0,
+          "running": 0,
+          "completed": 1,
+          "failed": 0,
+          "truncated": 0,
+          "nonzeroExits": 0,
+          "missingExitCodes": 0,
+          "stdoutCharacters": 125,
+          "stderrCharacters": 0,
+          "maxStdoutCharacters": 125,
+          "maxStderrCharacters": 0,
+          "firstCreatedAt": "2026-09-23T11:01:16.930Z",
+          "firstStartedAt": "2026-09-23T11:01:16.949Z",
+          "lastFinishedAt": "2026-09-23T11:01:17.605Z",
+          "averageQueueMs": 19,
+          "averageExecutionMs": 656,
+          "maxExecutionMs": 656
+        },
+        "timing": {
+          "recordedLabLifetimeMs": 284671,
+          "cleanupAfterWorkLockMs": null,
+          "cleanupAfterExpiryMs": 26585,
+          "firstCommandStartAfterLabCreationMs": 17582
+        }
+      }
+    },
+    "namespaceObservation": {
+      "labId": "cmudzsk130017kz1e8qwha4rg",
+      "namespaceAbsent": true,
+      "brokerRecord": {
+        "id": "cmudzsk130017kz1e8qwha4rg",
+        "status": "expired",
+        "cleanup_pending": 0,
+        "expires_at": "2026-09-23T11:05:17.453Z"
+      }
+    },
+    "candidateStatusNote": "The read-only checkpoint found the candidate row started and past its deadline while the lab was expired. The later browser visit completed the normal lazy auto-submission path.",
+    "postProofBrowserCheck": {
+      "source": "Operator browser observation after independent database and cluster proof",
+      "observedAt": "2026-09-23T11:07:08Z",
+      "assessmentCompleteVisible": true,
+      "submittedTimeVisible": true,
+      "workspaceOrCommandControlsVisible": false
+    }
+  },
+  "finalDatabaseAggregate": {
+    "observedAt": "2026-09-23T11:06:44.052Z",
+    "readOnly": true,
+    "cleanupRecordedForLabs": 3,
+    "terminalCommandRecords": 9,
+    "schemaAuditPassed": true
+  },
+  "independentClusterObservations": {
+    "beforeExpiry": {
+      "observedAt": "2026-09-23T12:02:21.881796+01:00",
+      "exactLabs": [
+        {
+          "labId": "cmudzndp8000lkz1e4i4c99yu",
+          "namespaceAbsent": true,
+          "brokerRecord": {
+            "id": "cmudzndp8000lkz1e4i4c99yu",
+            "status": "stopped",
+            "cleanup_pending": 0,
+            "expires_at": "2026-09-23T11:00:34.382Z"
+          }
+        },
+        {
+          "labId": "cmudznuya000nkz1eczmv6zbh",
+          "namespaceAbsent": true,
+          "brokerRecord": {
+            "id": "cmudznuya000nkz1eczmv6zbh",
+            "status": "stopped",
+            "cleanup_pending": 0,
+            "expires_at": "2026-09-23T11:57:19.52Z"
+          }
+        }
+      ],
+      "activeNamespaces": [
+        {
+          "name": "ua-lab-cmudzsk130017kz1e8qwha4rg",
+          "labId": "cmudzsk130017kz1e8qwha4rg",
+          "expiresAt": "2026-09-23T11:05:17.453Z",
+          "deleting": false
+        }
+      ],
+      "readyBrokerReplicas": 1,
+      "janitorLastSuccessfulTime": "2026-09-23T11:02:07Z"
+    },
+    "afterExpiry": {
+      "observedAt": "2026-09-23T12:06:54.596901+01:00",
+      "exactLabs": [
+        {
+          "labId": "cmudzndp8000lkz1e4i4c99yu",
+          "namespaceAbsent": true,
+          "brokerRecord": {
+            "id": "cmudzndp8000lkz1e4i4c99yu",
+            "status": "stopped",
+            "cleanup_pending": 0,
+            "expires_at": "2026-09-23T11:00:34.382Z"
+          }
+        },
+        {
+          "labId": "cmudznuya000nkz1eczmv6zbh",
+          "namespaceAbsent": true,
+          "brokerRecord": {
+            "id": "cmudznuya000nkz1eczmv6zbh",
+            "status": "stopped",
+            "cleanup_pending": 0,
+            "expires_at": "2026-09-23T11:57:19.52Z"
+          }
+        },
+        {
+          "labId": "cmudzsk130017kz1e8qwha4rg",
+          "namespaceAbsent": true,
+          "brokerRecord": {
+            "id": "cmudzsk130017kz1e8qwha4rg",
+            "status": "expired",
+            "cleanup_pending": 0,
+            "expires_at": "2026-09-23T11:05:17.453Z"
+          }
+        }
+      ],
+      "activeNamespaces": [],
+      "readyBrokerReplicas": 1,
+      "janitorLastSuccessfulTime": "2026-09-23T11:06:08Z"
+    }
+  },
+  "reconciliation": {
+    "schedule": "rate(1 minute)",
+    "enabled": true,
+    "stackStatus": "UPDATE_COMPLETE",
+    "databaseRole": "uniqassess_lab_reconciler",
+    "manualEnabledInvocation": {
+      "examined": 1,
+      "failed": 0,
+      "deferred": 0
+    },
+    "browserClosedScheduledSummaries": [
+      {
+        "observedAt": "2026-09-23T11:02:44.0430000Z",
+        "examined": 0,
+        "failed": 0,
+        "deferred": 0
+      },
+      {
+        "observedAt": "2026-09-23T11:03:44.1300000Z",
+        "examined": 0,
+        "failed": 0,
+        "deferred": 0
+      },
+      {
+        "observedAt": "2026-09-23T11:04:44.1380000Z",
+        "examined": 0,
+        "failed": 0,
+        "deferred": 0
+      },
+      {
+        "observedAt": "2026-09-23T11:05:44.0740000Z",
+        "examined": 1,
+        "failed": 0,
+        "deferred": 0
+      },
+      {
+        "observedAt": "2026-09-23T11:06:44.1240000Z",
+        "examined": 0,
+        "failed": 0,
+        "deferred": 0
+      }
+    ]
+  },
+  "evidenceLimits": [
+    "Normal final snapshots are capped at 32,768 characters. Bravo reached that cap and the truncation flag was retained; Alpha assessor UI also displayed truncation explicitly.",
+    "When the independent janitor removed a namespace while the broker was offline, the restored broker recorded snapshot unavailability honestly.",
+    "Database cleanup timestamps are runner receipts and are paired here with an independent exact namespace-absence observation.",
+    "Timings come from synthetic runs and include operator interaction where applicable; they are not latency percentiles or assessment calibration.",
+    "The pilot has one control node, no high-availability guarantee and a two-lab capacity. Infrastructure/image observations are recorded separately in PILOT_VERIFICATION.md."
+  ],
+  "sourceArtifacts": [
+    ".deployment/pilot-database-preflight.json",
+    ".deployment/bravo-api-result.json",
+    ".deployment/pilot-database-bravo-reconciled.json",
+    ".deployment/live-lifecycle-evidence.json",
+    ".deployment/live-recovery-evidence.json",
+    ".deployment/live-janitor-evidence.json",
+    ".deployment/browser-cluster-before-expiry.json",
+    ".deployment/browser-cluster-after-expiry.json",
+    ".deployment/pilot-database-expiry-reconciled.json",
+    ".deployment/browser-closed-reconciliation-summaries.json"
+  ]
+}

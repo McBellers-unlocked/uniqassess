@@ -4,7 +4,7 @@ The first release adds a real Kubernetes workload troubleshooting exercise to a 
 
 ## Delivery status
 
-The repository includes the candidate console, task configuration, authenticated application API, evidence storage, assessor view, migration, dedicated runner and versioned exercise. It is opt-in and disabled by default. No lab infrastructure has been provisioned and no real cluster run has been verified in this development environment. A live pilot is required before candidate use. The AWS follow-on plan is in [AWS_CLOUD_LAB_PLAN.md](AWS_CLOUD_LAB_PLAN.md).
+The repository includes the candidate console, task configuration, authenticated application API, evidence storage, assessor view, migration, dedicated runner and versioned exercise. It is opt-in and disabled by default in a new installation. The September 2026 AWS pilot deployment and live verification are recorded in [KUBERNETES_PILOT_DEPLOYMENT.md](KUBERNETES_PILOT_DEPLOYMENT.md). The AWS follow-on plan is in [AWS_CLOUD_LAB_PLAN.md](AWS_CLOUD_LAB_PLAN.md).
 
 ## Architecture
 
@@ -14,7 +14,7 @@ Candidate browser -> UNIQassess API -> dedicated lab runner -> assessment-only K
                          +-> PostgreSQL command records -> anonymous human marking
 ```
 
-The browser receives no cluster credentials, runner credentials or arbitrary runtime URLs. Every lab request requires the candidate's existing token and session cookie, including reads after submission. Task enablement comes from the cohort's frozen assessment version. Each candidate/task gets one idempotently created environment; there is no reset button. Each command is persisted before dispatch with a unique ID reused on retries.
+The application gives the browser no administrator credentials, runner key or configurable runtime URL. Inside the workspace, kubectl uses a rotating Kubernetes service-account token limited to that candidate's namespace. A candidate operating the shell can inspect that token; network isolation and namespace permissions remain necessary even if they copy it. Every application lab request requires the candidate's existing assessment token and session cookie, including reads after submission. Task enablement comes from the cohort's frozen assessment version. Each candidate/task gets one idempotently created environment; there is no reset button. Each command is persisted before dispatch with a unique ID reused on retries.
 
 Main-work submission and the written defence lock further command submission. The runner independently enforces the earlier of the assessment deadline and a 120-minute maximum lease, including when the browser closes or the application cannot reach it. The runner must keep final command records and an observed resource snapshot available for reconciliation. Evidence is not an automatic score and terminal text is never interpreted as HTML.
 
@@ -34,6 +34,10 @@ The batch console supports multiline commands and file editing through shell com
 ### Amplify server configuration
 
 Amplify build variables are not automatically available to Next.js server requests. The application therefore embeds only the nonsecret `KUBERNETES_LABS_ENABLED` switch, `KUBERNETES_LAB_CONFIG_SECRET_ARN` locator and existing `APP_REGION` setting. The runner URL and key are fetched at request time from AWS Secrets Manager using the SSR compute role. See [AWS SSR environment guidance](https://docs.aws.amazon.com/amplify/latest/userguide/ssr-environment-variables.html) and [SSR compute roles](https://docs.aws.amazon.com/amplify/latest/userguide/amplify-SSR-compute-role.html).
+
+Set the existing `NEXTAUTH_URL` to the exact public assessment origin. Lab writes compare the browser's Origin against that configured address, because Amplify's internal request hostname can differ from the public site. Caller-supplied forwarding headers do not expand the allowed origin.
+
+For the deployed pilot, `node scripts/lab-pilot-toggle.mjs disable` stops new candidate starts and commands within the configuration cache's maximum 60 seconds. It preserves the runner URL/key so the trusted reconciler and independent janitor continue cleanup. `enable` is the corresponding operator action after verification. The helper checks the AWS account and fixed runner address and never prints secret values.
 
 1. Store a dedicated Secrets Manager secret in `APP_REGION` with this JSON shape. Generate the real key securely and give the broker the same value; the following is a format example only:
 
