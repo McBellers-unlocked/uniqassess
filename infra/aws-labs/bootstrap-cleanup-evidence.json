@@ -1,0 +1,134 @@
+{
+  "observedAt": "2026-09-23T13:43:57.864Z",
+  "account": "891612540396",
+  "region": "eu-west-1",
+  "mode": "--execute-after-acceptance",
+  "removalTargets": {
+    "functionName": "uniqassess-aws-lab-account-bootstrap",
+    "roleArn": "arn:aws:iam::891612540396:role/uniqassess-aws-lab-account-bootstrap",
+    "inlinePolicy": "AssumeOnlyDedicatedSandbox"
+  },
+  "independentProof": {
+    "alpha": {
+      "pilot": "alpha",
+      "observedAt": "2026-09-23T13:37:32.628Z",
+      "readOnly": true,
+      "controllerCalled": false,
+      "cleanupInvoked": false,
+      "aws": {
+        "accountId": "689324611808",
+        "labId": "cmue4s0510005lb1elll83jfa",
+        "observedAt": "2026-09-23T13:37:32.650726+00:00",
+        "absent": {
+          "function": true,
+          "bucket": true,
+          "project": true,
+          "applicationRole": true,
+          "jobRole": true,
+          "alarm": true,
+          "applicationLogs": true,
+          "jobLogs": true
+        },
+        "allAbsent": true
+      },
+      "kubernetes": {
+        "observedAt": "2026-09-23T13:37:38.831482+00:00",
+        "namespace": "ua-lab-cmue4sj4u0009lb1encxfgxjx",
+        "namespaceAbsent": true,
+        "clusterFingerprintVerified": true,
+        "dedicatedCluster": true,
+        "runnerOwner": "pilot",
+        "brokerReadyReplicas": 1,
+        "nodesReady": true,
+        "nodeCount": 2,
+        "accountId": "891612540396",
+        "controlInstanceId": "i-09fa493b2b45c84af",
+        "ssmCommandId": "9c697b7b-f5d4-40cf-a7fd-3ed91e783838",
+        "ssmStatus": "Success"
+      },
+      "allAbsent": true,
+      "finishedAt": "2026-09-23T13:37:41.542Z"
+    },
+    "beta": {
+      "pilot": "beta",
+      "observedAt": "2026-09-23T13:41:24.145Z",
+      "readOnly": true,
+      "controllerCalled": false,
+      "cleanupInvoked": false,
+      "aws": {
+        "accountId": "689324611808",
+        "labId": "cmue59x3g000pif1elug51yn8",
+        "observedAt": "2026-09-23T13:41:24.109201+00:00",
+        "absent": {
+          "function": true,
+          "bucket": true,
+          "project": true,
+          "applicationRole": true,
+          "jobRole": true,
+          "alarm": true,
+          "applicationLogs": true,
+          "jobLogs": true
+        },
+        "allAbsent": true
+      },
+      "allAbsent": true,
+      "finishedAt": "2026-09-23T13:41:24.146Z"
+    },
+    "operatorRunId": "20260923c1d2e3f4",
+    "operatorPassed": true
+  },
+  "before": {
+    "observedAt": "2026-09-23T13:43:46.548Z",
+    "stackStatus": "UPDATE_COMPLETE",
+    "functionName": "uniqassess-aws-lab-runner",
+    "state": "Active",
+    "lastUpdate": "Successful",
+    "codeSha256": "3a39ca3a4bb8fc33ebb670d68de1f731fec88b34f493f114c6e154fd2c8ebd5d",
+    "reconciliation": "ENABLED",
+    "poolEmpty": true,
+    "leases": {
+      "cmue4s0510005lb1elll83jfa": {
+        "status": "stopped",
+        "cleanupComplete": true,
+        "cleanedAt": "2026-09-23T13:31:53.401Z"
+      },
+      "cmue59x3g000pif1elug51yn8": {
+        "status": "expired",
+        "cleanupComplete": true,
+        "cleanedAt": "2026-09-23T13:39:53.550Z"
+      }
+    }
+  },
+  "mutationsPerformed": true,
+  "functionAbsent": true,
+  "roleAbsent": true,
+  "after": {
+    "observedAt": "2026-09-23T13:44:19.071Z",
+    "stackStatus": "UPDATE_COMPLETE",
+    "functionName": "uniqassess-aws-lab-runner",
+    "state": "Active",
+    "lastUpdate": "Successful",
+    "codeSha256": "3a39ca3a4bb8fc33ebb670d68de1f731fec88b34f493f114c6e154fd2c8ebd5d",
+    "reconciliation": "ENABLED",
+    "poolEmpty": true,
+    "leases": {
+      "cmue4s0510005lb1elll83jfa": {
+        "status": "stopped",
+        "cleanupComplete": true,
+        "cleanedAt": "2026-09-23T13:31:53.401Z"
+      },
+      "cmue59x3g000pif1elug51yn8": {
+        "status": "expired",
+        "cleanupComplete": true,
+        "cleanedAt": "2026-09-23T13:39:53.550Z"
+      }
+    }
+  },
+  "runtimeHealth": {
+    "provider": "aws",
+    "templateId": "aws-service-release-v1",
+    "enabled": true,
+    "ready": true
+  },
+  "completedAt": "2026-09-23T13:44:21.187Z"
+}
