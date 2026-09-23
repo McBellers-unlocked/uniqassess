@@ -148,7 +148,7 @@ def main():
             denied(name, a, ["kubectl", *argv])
         base = {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "admission-probe", "namespace": a}, "spec": pod_spec(config)}
         mutations = [
-            ("privileged_pod_denied", lambda p: p["spec"]["containers"][0]["securityContext"].update(privileged=True), "privileged"),
+            ("privileged_pod_denied", lambda p: p["spec"]["containers"][0]["securityContext"].update(privileged=True, allowPrivilegeEscalation=True), "privileged"),
             ("host_network_denied", lambda p: p["spec"].update(hostNetwork=True), "hostNetwork"),
             ("host_path_denied", lambda p: p["spec"]["volumes"].append({"name": "host", "hostPath": {"path": "/"}}), None),
             ("runtime_bypass_denied", lambda p: p["spec"].pop("runtimeClassName"), "sandbox RuntimeClass"),
@@ -176,9 +176,11 @@ def main():
             must(cluster.call(["-n", ns, "rollout", "status", "deployment/checkout", "--timeout=90s"], timeout=95), "Wait for repair")
             repaired = candidate(ns, ["curl", "--fail", "--silent", "--show-error", "--max-time", "4", "http://checkout/checkout"])
             record("repaired_http_" + ns[-1], repaired.exit_code == 0 and '"ok"' in repaired.stdout, repaired.stderr)
-        pods_b = json.loads(cluster.call(["-n", b, "get", "pods", "-l", "app=checkout", "-o", "json"]).stdout)
-        ready_b = next(p for p in pods_b["items"] if any(c.get("type") == "Ready" and c.get("status") == "True" for c in p.get("status", {}).get("conditions", [])))
-        target_ip = ready_b["status"]["podIP"]
+        # Full PodList JSON can exceed the runner's intentional 32KiB output cap;
+        # select only the data needed by this probe before it crosses that cap.
+        pod_rows = cluster.call(["-n", b, "get", "pods", "-l", "app=checkout", "--field-selector=status.phase=Running",
+                                 "-o", 'jsonpath={range .items[*]}{.status.podIP}{" "}{.status.containerStatuses[0].ready}{"\\n"}{end}']).stdout
+        target_ip = next(row.split()[0] for row in pod_rows.splitlines() if row.endswith(" true"))
         own_direct = curl(b, f"http://{target_ip}:8080/checkout")
         if not record("cross_namespace_target_proven_live", own_direct.exit_code == 0 and own_direct.stdout == "200"):
             raise RuntimeError("Cross-namespace network target was not healthy")

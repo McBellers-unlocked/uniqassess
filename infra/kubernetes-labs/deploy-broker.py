@@ -1,4 +1,5 @@
 """Operator-only renderer/installer, after recorded cluster isolation checks pass."""
+import base64
 import json
 import os
 from pathlib import Path
@@ -41,7 +42,7 @@ os.chmod(directory,0o700)
 pv={'apiVersion':'v1','kind':'PersistentVolume','metadata':{'name':'uniqassess-lab-evidence'},'spec':{
     'capacity':{'storage':'8Gi'},'volumeMode':'Filesystem','accessModes':['ReadWriteOnce'],'persistentVolumeReclaimPolicy':'Retain',
     'storageClassName':'uniqassess-local','local':{'path':str(directory)},
-    'nodeAffinity':{'required':{'nodeSelectorTerms':[{'matchExpressions':[{'key':'kubernetes.io/hostname','operator':'In','values':['lab-control']}]}]}}}
+    'nodeAffinity':{'required':{'nodeSelectorTerms':[{'matchExpressions':[{'key':'kubernetes.io/hostname','operator':'In','values':['lab-control']}]}]}}}}
 apply(pv)
 apply(obj('PersistentVolumeClaim','lab-evidence',{'accessModes':['ReadWriteOnce'],'storageClassName':'uniqassess-local','volumeName':'uniqassess-lab-evidence','resources':{'requests':{'storage':'8Gi'}}}))
 kubeconfig={'apiVersion':'v1','kind':'Config','clusters':[{'name':'assessment','cluster':{'server':'https://kubernetes.default.svc:443','certificate-authority':'/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'}}],
@@ -49,7 +50,9 @@ kubeconfig={'apiVersion':'v1','kind':'Config','clusters':[{'name':'assessment','
     'contexts':[{'name':'assessment','context':{'cluster':'assessment','user':'broker'}}],'current-context':'assessment'}
 apply(obj('ConfigMap','lab-broker-kubeconfig',data={'kubeconfig':json.dumps(kubeconfig)}))
 # Never put this manifest on disk, in command arguments or in deployment output.
-apply(obj('Secret','lab-runner',type='Opaque',stringData={'LAB_RUNNER_API_KEY':secret['key']}))
+secret_manifest=obj('Secret','lab-runner',type='Opaque',data={'LAB_RUNNER_API_KEY':base64.b64encode(secret['key'].encode()).decode()})
+print(kubectl('apply','--server-side','--field-manager=uniqassess-bootstrap','-f','-',data=json.dumps(secret_manifest)),end='')
+print(kubectl('annotate','secret','lab-runner','-n',namespace,'kubectl.kubernetes.io/last-applied-configuration-'),end='')
 env={
     'LAB_RUNNER_OWNER':'pilot','LAB_CLUSTER_UID':uid,'LAB_RUNTIME_CLASS':'assessment-sandbox','LAB_RUNTIME_HANDLER':'runsc',
     'LAB_WORKSPACE_IMAGE':images['workspace'],'LAB_API_CIDRS':'10.43.0.1/32,10.88.0.10/32','LAB_API_PORTS':'443,6443',
@@ -68,8 +71,14 @@ pod={'serviceAccountName':'lab-broker',**placement,'securityContext':security,'t
     'volumes':[{'name':'kubeconfig','configMap':{'name':'lab-broker-kubeconfig'}},{'name':'data','persistentVolumeClaim':{'claimName':'lab-evidence'}},{'name':'tmp','emptyDir':{'sizeLimit':'64Mi'}}]}
 apply(obj('Deployment','lab-broker',{'replicas':1,'strategy':{'type':'Recreate'},'selector':{'matchLabels':{'app':'lab-broker'}},'template':{'metadata':{'labels':{'app':'lab-broker'}},'spec':pod}},api='apps/v1'))
 apply(obj('Service','lab-broker',{'type':'ClusterIP','clusterIP':'10.43.0.20','selector':{'app':'lab-broker'},'ports':[{'port':8080,'targetPort':8080}]}))
-janitor=json.loads(kubectl('create','--dry-run=client','-f',str(ROOT/'lab-runner/janitor-cronjob.yaml'),'-o','json'))
-for item in janitor['items']:
+rendered=kubectl('create','--dry-run=client','-f',str(ROOT/'lab-runner/janitor-cronjob.yaml'),'-o','json').strip()
+janitor=[]
+decoder=json.JSONDecoder()
+while rendered:
+    document,end=decoder.raw_decode(rendered)
+    janitor.extend(document['items'] if document.get('kind')=='List' else [document])
+    rendered=rendered[end:].lstrip()
+for item in janitor:
     if item['kind']=='CronJob':
         spec=item['spec']['jobTemplate']['spec']['template']['spec']
         spec.update(placement)

@@ -25,7 +25,7 @@ server {
   ssl_certificate_key /etc/letsencrypt/live/lab-runner.uniqassess.org/privkey.pem;
   ssl_protocols TLSv1.2 TLSv1.3;
   server_tokens off;
-  client_max_body_size 16k;
+  client_max_body_size 40k;
   client_body_timeout 10s;
   client_header_timeout 10s;
   keepalive_timeout 15s;

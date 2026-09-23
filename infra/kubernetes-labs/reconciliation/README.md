@@ -25,7 +25,11 @@ Create two Secrets Manager values in the application region:
 - Database secret: `{"DATABASE_URL":"postgresql://..."}`. Prefer a database account limited to the reconciliation tables and required candidate reads. Keep connection/pool timeouts bounded and allow at most four pooled connections.
 - Runner secret: `{"enabled":false,"url":"https://runner.example","key":"a-random-shared-key-of-at-least-32-characters"}`. Use the same secret as the application. Cleanup requires valid URL/key fields even when disabled.
 
+For the verified UNIQassess pilot deployment, `node scripts/lab-deployment-ops.mjs reconcile-role` creates or rotates the fixed `uniqassess_lab_reconciler` login and updates only its dedicated database secret. It checks the AWS account, RDS target, secret identity and disabled schedule first. It grants CONNECT/USAGE, SELECT on candidates and the two lab tables, and UPDATE on the two lab tables. The role has no elevated attributes or other table privileges; connection and query timeouts are bounded. Passwords remain in process memory. Existing PostgreSQL PUBLIC privileges are left unchanged, including temporary-table permission; the role has no database/schema CREATE privilege. Reinvoke the Lambda after each rotation before enabling its schedule.
+
 Upload the ZIP to the approved application deployment bucket, then deploy `template.yaml` using `CAPABILITY_IAM` and these parameters:
+
+The current pilot bootstrap bucket expires uploaded objects after seven days. Lambda retains its deployed code, but a later stack rebuild or rollback may need a newly built and uploaded ZIP. Keep the source and lockfile version with the deployment record, use a new content-addressed `CodeKey` when rebuilding, and upload it before recreating the stack. Do not rely on the pilot bucket as a permanent artifact archive.
 
 | Parameter | Value |
 | --- | --- |
