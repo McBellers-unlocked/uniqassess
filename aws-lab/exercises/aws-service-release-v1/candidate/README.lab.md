@@ -4,7 +4,7 @@ This is a fictional application in a dedicated candidate AWS sandbox. Use the la
 
 Project files and Terraform state persist, but downloaded provider caches (`.terraform`) and Python caches (`__pycache__`) do not. Begin each separate Terraform job with `terraform init -input=false`; the supplied pipeline already does this. Shell variables do not carry between jobs.
 
-IAM and alias changes may take time to become visible. Use bounded read/invoke checks and retain the retries as evidence instead of blindly repeating Terraform or deployment mutations.
+IAM and alias changes may take time to become visible. AWS also documents that added execution-role permissions require a code or configuration refresh so existing Lambda instances are replaced. In this lab, apply the bounded IAM repair before your permitted code deployment; function configuration changes remain outside your remit. Use bounded read/invoke checks and retain the retries as evidence instead of blindly repeating Terraform or deployment mutations. See [AWS execution-role update guidance](https://docs.aws.amazon.com/lambda/latest/dg/permissions-executionrole-update.html).
 
 `session.json` and `terraform.tfvars.json` are provided by the operator. Confirm their fixed account and region against `aws sts get-caller-identity`. They name `function_name`, `application_role_name`, `data_bucket`, `alarm_name`, and the supplied immutable `known_good_version`. The permitted stable alias is `live`. These files contain names, not credentials. Temporary job credentials are supplied by the runner; do not copy them into files, notes or output.
 

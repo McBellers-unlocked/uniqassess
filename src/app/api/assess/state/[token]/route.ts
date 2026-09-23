@@ -67,6 +67,8 @@ export async function GET(
         // Number of written (memo) deliverables — the switchable tasks the
         // landing page should describe — and whether a live chat/IM can fire.
         memoTaskCount: scenario.tasks.filter(isMemoAiTask).length,
+        practicalTaskCount: scenario.tasks.filter((task) => isMemoAiTask(task) && (task.kubernetesLab || task.awsLab)).length,
+        source: scenario.source,
         hasLiveMessage: scenario.tasks.some(isChatTask),
         assistantName: scenario.assistantName ?? null,
         assistantShortName: scenario.assistantShortName ?? null,
