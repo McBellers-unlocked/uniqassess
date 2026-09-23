@@ -4,14 +4,13 @@ This service provisions a real Kubernetes troubleshooting exercise and runs a
 candidate's commands inside its console pod. It is a separate deployment from
 UNIQassess. No candidate command is run by a shell on the application or broker
 host. The application must authenticate/authorize each candidate, bind each lab to
-one assessment attempt, and call this broker over a private TLS connection. The
+one assessment attempt, and call this broker over an authenticated TLS connection. The
 broker accepts a server API key; it is not a browser-facing endpoint.
 
-The implementation and tests are ready for infrastructure integration. No cluster
-has been created, deployed to, or live-tested by this change. Do not enable this for
-real candidates until the complete smoke/security checks below pass on your own
-assessment cluster. The Python unit tests do not demonstrate runtime isolation or
-correct behavior of a particular CNI/admission installation.
+The [September 2026 pilot record](../docs/KUBERNETES_PILOT_DEPLOYMENT.md) tracks
+the deployed cluster and observed live checks. Every new installation still needs
+the smoke/security checks below on its own assessment cluster. Python unit tests
+alone do not demonstrate runtime isolation or CNI/admission enforcement.
 
 ## What candidates get
 
@@ -141,10 +140,13 @@ the app automatically creates a cluster or purchases cloud capacity.
    requires coordinated policy/image/broker rollout. Never weaken a policy just
    to make a smoke test pass.
 5. Run **one** broker process with `/data` on durable local storage owned by UID
-   10001, a read-only kubeconfig mount, and a private TLS reverse proxy. Set
+   10001, a read-only kubeconfig mount, and a TLS reverse proxy. Prefer private
+   ingress when the application hosting network supports it. The Amplify pilot
+   uses a dedicated public HTTPS endpoint with mandatory bearer authentication,
+   bounded request bodies, connection limits and request rate limits. Set
    `LAB_LISTEN=0.0.0.0` only when container/private networking requires it. Apply
-   connection/request rate limits at that proxy. There are no public endpoints or
-   CORS allowances. Python's standard HTTP server is not intended as a public
+   connection/request rate limits at that proxy. There are no anonymous broker
+   operations or CORS allowances. Python's standard HTTP server is not intended as a public
    ingress. SQLite and a host file lock support one broker instance, not horizontal
    replicas or SQLite on an unreliable shared filesystem.
 6. Install the independent `janitor-cronjob.yaml` after replacing its three

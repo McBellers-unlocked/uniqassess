@@ -81,6 +81,20 @@ async function main() {
     const env={...app.environmentVariables,...branch.environmentVariables};
     state.databaseSecretArn=secret('uniqassess/labs/pilot/reconciliation-database',{DATABASE_URL:env.DATABASE_URL});
     save();console.log({databaseSecretArn:state.databaseSecretArn});
+  } else if (op === 'app-log') {
+    const app=aws('amplify','get-app',{appId:'d1wxabrgr6nkub'}).app;
+    const job=aws('amplify','get-job',{appId:app.appId,branchName:'main',jobId:process.argv[3]}).job;
+    for(const step of job.steps.filter(s=>s.logUrl)){
+      let log=await (await fetch(step.logUrl)).text();
+      for(const value of Object.values(app.environmentVariables))if(value.length>8)log=log.split(value).join('[REDACTED]');
+      writeFileSync(path.join(dir,`amplify-${process.argv[3]}-${step.stepName}.log`),log);
+      console.log(step.stepName,log.split('\n').slice(-90).join('\n'));
+    }
+  } else if(op==='role-events') {
+    for(const r of ['eu-west-1','us-east-1']) {
+      const data=aws('cloudtrail','lookup-events',{LookupAttributes:[{AttributeKey:'EventName',AttributeValue:'AssumeRole'}],StartTime:'2026-09-23T10:00:00Z',MaxResults:50},r);
+      console.log(r,data.Events.map(e=>JSON.parse(e.CloudTrailEvent)).filter(e=>String(e.requestParameters?.roleArn).includes('Amplify')||String(e.requestParameters?.roleArn).includes('amplify')).map(e=>({time:e.eventTime,error:e.errorCode,message:e.errorMessage,role:e.requestParameters?.roleArn,identity:e.userIdentity?.invokedBy,source:e.sourceIPAddress})));
+    }
   } else if (op === 'send') {
     const commands=readFileSync(path.resolve(process.argv[3]),'utf8').replace(/\r\n/g,'\n');
     const instance=process.argv[4] || state.outputs.ControlInstanceId;

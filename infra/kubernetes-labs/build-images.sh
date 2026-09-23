@@ -10,15 +10,18 @@ auth=boto3.client('ecr',region_name='eu-west-1').get_authorization_token()['auth
 user,password=base64.b64decode(auth['authorizationToken']).decode().split(':',1)
 subprocess.run(['docker','login','--username',user,'--password-stdin',os.environ['REGISTRY']],input=password,text=True,check=True,stdout=subprocess.DEVNULL)
 PY
+cache_flags=(--no-cache)
 for image in workspace broker; do
   file=lab-runner/Dockerfile
   if [ "$image" = workspace ]; then file=lab-runner/workspace/Dockerfile; fi
   ref="$REGISTRY/uniqassess-labs/$image:$TAG"
-  if ! docker build --build-arg KUBECTL_VERSION=v1.36.4 -f "$file" -t "$ref" lab-runner > "/opt/uniqassess-bootstrap/build-$image.log" 2>&1; then
+  if ! docker build --pull "${cache_flags[@]}" --build-arg KUBECTL_VERSION=v1.36.4 -f "$file" -t "$ref" lab-runner > "/opt/uniqassess-bootstrap/build-$image.log" 2>&1; then
     tail -80 "/opt/uniqassess-bootstrap/build-$image.log"
     exit 1
   fi
   docker push "$ref" > "/opt/uniqassess-bootstrap/push-$image.log" 2>&1
+  # The broker may reuse the tools stage freshly rebuilt in this invocation.
+  cache_flags=()
 done
 python3 - <<'PY'
 import subprocess,json,os,boto3,base64

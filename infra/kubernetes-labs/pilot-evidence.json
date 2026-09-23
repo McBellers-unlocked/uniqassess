@@ -1,0 +1,330 @@
+{
+  "observedAt": "2026-09-23T10:29:10.980Z",
+  "scope": "Dedicated two-node AWS Kubernetes pilot; cluster and image checks only. Browser and broker acceptance are recorded separately.",
+  "live": {
+    "runId": "2d748ff0be3d",
+    "passed": true,
+    "checks": [
+      {
+        "check": "runner_preflight_and_policy_typecheck",
+        "passed": true
+      },
+      {
+        "check": "kubelet_cannot_set_protected_label",
+        "passed": true
+      },
+      {
+        "check": "worker_process_and_node_reservations",
+        "passed": true
+      },
+      {
+        "check": "workspace_a_sandbox_placement",
+        "passed": true
+      },
+      {
+        "check": "workspace_b_sandbox_placement",
+        "passed": true
+      },
+      {
+        "check": "candidate_own_namespace_api",
+        "passed": true
+      },
+      {
+        "check": "anonymous_api_access_denied",
+        "passed": true
+      },
+      {
+        "check": "cross_namespace_read_denied",
+        "passed": true
+      },
+      {
+        "check": "kube_system_read_denied",
+        "passed": true
+      },
+      {
+        "check": "nodes_read_denied",
+        "passed": true
+      },
+      {
+        "check": "secrets_read_denied",
+        "passed": true
+      },
+      {
+        "check": "network_policy_mutation_denied",
+        "passed": true
+      },
+      {
+        "check": "quota_mutation_denied",
+        "passed": true
+      },
+      {
+        "check": "identity_mutation_denied",
+        "passed": true
+      },
+      {
+        "check": "role_mutation_denied",
+        "passed": true
+      },
+      {
+        "check": "workspace_delete_denied",
+        "passed": true
+      },
+      {
+        "check": "privileged_pod_denied",
+        "passed": true
+      },
+      {
+        "check": "host_network_denied",
+        "passed": true
+      },
+      {
+        "check": "host_path_denied",
+        "passed": true
+      },
+      {
+        "check": "runtime_bypass_denied",
+        "passed": true
+      },
+      {
+        "check": "unapproved_image_denied",
+        "passed": true
+      },
+      {
+        "check": "placement_bypass_denied",
+        "passed": true
+      },
+      {
+        "check": "writable_root_denied",
+        "passed": true
+      },
+      {
+        "check": "finalizer_denied",
+        "passed": true
+      },
+      {
+        "check": "external_service_denied",
+        "passed": true
+      },
+      {
+        "check": "cluster_dns_resolution",
+        "passed": true
+      },
+      {
+        "check": "external_dns_forwarding_disabled",
+        "passed": true
+      },
+      {
+        "check": "repaired_http_a",
+        "passed": true
+      },
+      {
+        "check": "repaired_http_b",
+        "passed": true
+      },
+      {
+        "check": "cross_namespace_target_proven_live",
+        "passed": true
+      },
+      {
+        "check": "cross_namespace_pod_http_denied",
+        "passed": true
+      },
+      {
+        "check": "worker_ssh_target_proven_live",
+        "passed": true
+      },
+      {
+        "check": "worker_ssh_denied",
+        "passed": true
+      },
+      {
+        "check": "worker_kubelet_target_proven_live",
+        "passed": true
+      },
+      {
+        "check": "worker_kubelet_denied",
+        "passed": true
+      },
+      {
+        "check": "control_kubelet_target_proven_live",
+        "passed": true
+      },
+      {
+        "check": "control_kubelet_denied",
+        "passed": true
+      },
+      {
+        "check": "metadata_ipv4_denied",
+        "passed": true
+      },
+      {
+        "check": "metadata_ipv6_denied",
+        "passed": true
+      },
+      {
+        "check": "vpc_dns_http_denied",
+        "passed": true
+      },
+      {
+        "check": "public_https_denied",
+        "passed": true
+      },
+      {
+        "check": "cleanup_a",
+        "passed": true
+      },
+      {
+        "check": "cleanup_b",
+        "passed": true
+      }
+    ],
+    "verificationFlagsChanged": false,
+    "remainingOperatorEvidence": [
+      "actual worker runsc/systrap process",
+      "worker IMDS disabled in EC2",
+      "worker has no IAM instance profile",
+      "nft rules on both hosts",
+      "node PID reservations",
+      "no production routes or credentials"
+    ],
+    "sourceCommandId": "73457904-f933-405b-9e9f-ff67ba998bd3"
+  },
+  "host": {
+    "sourceCommandId": "5ac71474-843e-4352-a590-1d3d16fecc2d",
+    "observations": [
+      {
+        "actualSandboxCount": 3,
+        "actualGoferCount": 6,
+        "allSandboxSystrap": true,
+        "allGoferSystrap": true,
+        "runtimeConfig": "[runsc_config]\n  platform = \"systrap\"\n",
+        "version": "runsc version release-20260914.0\nspec: 1.2.1",
+        "guardService": "active",
+        "agentService": "active"
+      },
+      {
+        "guardRuleCount": 11,
+        "guardChains": [
+          "input",
+          "forward"
+        ]
+      }
+    ]
+  },
+  "workerCloudBoundary": {
+    "metadataEndpoint": "disabled",
+    "metadataState": "applied",
+    "ipv6Metadata": "disabled",
+    "iamInstanceProfile": null
+  },
+  "restart": {
+    "sourceCommandId": "6340c54d-7165-4c2d-87ba-9edad51402e6",
+    "restartPersistence": true,
+    "sameClusterFingerprint": true,
+    "dnsForwardingDisabled": true,
+    "dnsOnControl": true,
+    "protectedLabelsPreserved": true,
+    "gvisorRuntimeClassPreserved": true,
+    "dockerRegistryCredentialsRemoved": true
+  },
+  "tools": {
+    "sourceCommandId": "c9afad16-a3fd-43ab-bdf5-df70fe9b5de9",
+    "curl": "8.22.0",
+    "curlSourceSha256": "f7ef3ae8a22e521f289803fe93543eb64c329b58aa73a9e224dfd915a2a5f4f7",
+    "kubectl": "v1.36.4",
+    "kubectlSha256": "8b8f088da2dab964f853b38464033b1be15ede2839eca751482357c45abdd05a",
+    "noSetuidOrSetgidFiles": true,
+    "podTextModuleAbsent": true,
+    "distroCurlAbsent": true,
+    "distroLibcurlAbsent": true
+  },
+  "images": {
+    "workspace": {
+      "digest": "sha256:93f17bab6f19e9c600de0202e3e58e25fa8d5441198cff7e36ee1612d96290d4",
+      "status": "COMPLETE",
+      "completedAt": "2026-09-23T11:25:48+01:00",
+      "counts": {
+        "CRITICAL": 0,
+        "HIGH": 2,
+        "MEDIUM": 2,
+        "LOW": 1
+      },
+      "findings": [
+        {
+          "cve": "CVE-2026-58055",
+          "severity": "MEDIUM",
+          "package": "nghttp2",
+          "version": "1.64.0-1.1+deb13u1"
+        },
+        {
+          "cve": "CVE-2026-95818",
+          "severity": "LOW",
+          "package": "glibc",
+          "version": "2.41-12+deb13u4"
+        },
+        {
+          "cve": "CVE-2026-82560",
+          "severity": "HIGH",
+          "package": "perl",
+          "version": "5.40.1-6+deb13u1"
+        },
+        {
+          "cve": "CVE-2026-85091",
+          "severity": "HIGH",
+          "package": "zlib",
+          "version": "1.3.dfsg+really1.3.1-1"
+        },
+        {
+          "cve": "CVE-2026-86805",
+          "severity": "MEDIUM",
+          "package": "glibc",
+          "version": "2.41-12+deb13u4"
+        }
+      ]
+    },
+    "broker": {
+      "digest": "sha256:8c1ec29cf62b0615c978e57f8f40195f4657c77afd7172064d681f1443b00663",
+      "status": "COMPLETE",
+      "completedAt": "2026-09-23T11:26:13+01:00",
+      "counts": {
+        "CRITICAL": 0,
+        "HIGH": 2,
+        "MEDIUM": 2,
+        "LOW": 1
+      },
+      "findings": [
+        {
+          "cve": "CVE-2026-86805",
+          "severity": "MEDIUM",
+          "package": "glibc",
+          "version": "2.41-12+deb13u4"
+        },
+        {
+          "cve": "CVE-2026-82560",
+          "severity": "HIGH",
+          "package": "perl",
+          "version": "5.40.1-6+deb13u1"
+        },
+        {
+          "cve": "CVE-2026-58055",
+          "severity": "MEDIUM",
+          "package": "nghttp2",
+          "version": "1.64.0-1.1+deb13u1"
+        },
+        {
+          "cve": "CVE-2026-95818",
+          "severity": "LOW",
+          "package": "glibc",
+          "version": "2.41-12+deb13u4"
+        },
+        {
+          "cve": "CVE-2026-85091",
+          "severity": "HIGH",
+          "package": "zlib",
+          "version": "1.3.dfsg+really1.3.1-1"
+        }
+      ]
+    }
+  },
+  "verificationFlagsChangedByAgent": false
+}
