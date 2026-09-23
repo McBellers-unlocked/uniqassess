@@ -5,6 +5,13 @@ professional hiring: declared AI-use modes, evidence-native Knowledge Systems,
 scenario preflight, per-candidate tokens, realistic work tasks, short reasoning
 defences, and blind human marking with explicit reveal.
 
+Optional **candidate-operated Kubernetes labs** add a direct command console,
+recorded runtime evidence and a versioned troubleshooting exercise to written
+tasks. The feature is disabled until a dedicated sandbox runner and cluster are
+configured; live deployment and pilot checks are still required. See
+[Kubernetes lab setup](docs/KUBERNETES_LABS.md) and the
+[AWS lab follow-on plan](docs/AWS_CLOUD_LAB_PLAN.md).
+
 Carved out of the Callater (`sdi-assessment-platform`) repo. See
 [`docs/MIGRATION_PLAN.md`](docs/MIGRATION_PLAN.md) for the carve-out log — what
 was copied, what was renamed, what was excluded, and what is still open.

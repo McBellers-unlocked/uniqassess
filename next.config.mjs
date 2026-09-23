@@ -15,6 +15,9 @@ const nextConfig = {
     // Optional — Secrets Manager fallback for the Anthropic key
     APP_REGION: process.env.APP_REGION,
     SECRET_ARN: process.env.SECRET_ARN,
+    // Nonsecret lab switch/locator only. SSR fetches the runner key using its IAM role.
+    KUBERNETES_LABS_ENABLED: process.env.KUBERNETES_LABS_ENABLED,
+    KUBERNETES_LAB_CONFIG_SECRET_ARN: process.env.KUBERNETES_LAB_CONFIG_SECRET_ARN,
   },
   // Ensure scenario HTML exhibits + marking rubric JSONs under infra/recruit
   // are included in the serverless output so readFileSync(process.cwd() + …)

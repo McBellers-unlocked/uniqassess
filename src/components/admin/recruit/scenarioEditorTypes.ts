@@ -49,7 +49,7 @@ export interface EditorTask {
   exhibit: EditorExhibit | null;
   deliverableLabel: string | null;
   deliverablePlaceholder: string | null;
-  config?: { codeExecutionEnabled?: boolean; [key: string]: unknown } | null;
+  config?: { codeExecutionEnabled?: boolean; kubernetesLab?: { enabled: boolean; templateId: string } | null; [key: string]: unknown } | null;
   emails: EditorEmail[];
   chatScripts: EditorChatScript[];
 }

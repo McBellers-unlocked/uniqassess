@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { EditorScenario, EditorTask } from "./scenarioEditorTypes";
+import { KUBERNETES_LAB_TEMPLATE } from "@/lib/recruit/kubernetes-lab-config";
 
 /**
  * Right-panel editor for memo_ai tasks. Fields: title, brief, totalMarks,
@@ -29,6 +30,7 @@ export default function MemoTaskEditor({
   const [deliverableLabel, setDeliverableLabel] = useState(task.deliverableLabel ?? "");
   const [deliverablePlaceholder, setDeliverablePlaceholder] = useState(task.deliverablePlaceholder ?? "");
   const [codeExecutionEnabled, setCodeExecutionEnabled] = useState(task.config?.codeExecutionEnabled === true);
+  const [kubernetesLabEnabled, setKubernetesLabEnabled] = useState(task.config?.kubernetesLab?.enabled === true);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +45,7 @@ export default function MemoTaskEditor({
     setDeliverableLabel(task.deliverableLabel ?? "");
     setDeliverablePlaceholder(task.deliverablePlaceholder ?? "");
     setCodeExecutionEnabled(task.config?.codeExecutionEnabled === true);
+    setKubernetesLabEnabled(task.config?.kubernetesLab?.enabled === true);
     setSavedAt(null);
     setError(null);
     // Intentionally reinitialise only when selecting a different task; parent
@@ -67,7 +70,7 @@ export default function MemoTaskEditor({
             exhibitId: exhibitId || null,
             deliverableLabel: deliverableLabel.trim(),
             deliverablePlaceholder,
-            config: { ...(task.config ?? {}), codeExecutionEnabled },
+            config: { ...(task.config ?? {}), codeExecutionEnabled, kubernetesLab: kubernetesLabEnabled ? { enabled: true, templateId: KUBERNETES_LAB_TEMPLATE.id } : null },
           }),
         }
       );
@@ -140,6 +143,19 @@ export default function MemoTaskEditor({
         <span>
           <span className="block font-medium text-uq">Managed code execution</span>
           <span className="mt-0.5 block text-xs leading-relaxed text-uq-3">Allow the AI to run Python in Anthropic&apos;s isolated sandbox. Enable only for tasks using fictional or approved data; execution traces are retained with candidate interactions.</span>
+        </span>
+      </label>
+
+      <label className="flex items-start gap-3 rounded-lg border border-uq bg-uq-glass-subtle p-3 text-sm">
+        <input
+          type="checkbox"
+          checked={kubernetesLabEnabled}
+          onChange={(e) => setKubernetesLabEnabled(e.target.checked)}
+          className="mt-0.5 h-4 w-4 rounded border-uq accent-[color:var(--uq-accent)]"
+        />
+        <span>
+          <span className="block font-medium text-uq">Kubernetes practical lab</span>
+          <span className="mt-0.5 block text-xs leading-relaxed text-uq-3">{KUBERNETES_LAB_TEMPLATE.title}. Candidates run their own commands in a temporary Kubernetes environment; commands and results are recorded for marking. A separately configured lab runner is required before candidates can use it.</span>
         </span>
       </label>
 

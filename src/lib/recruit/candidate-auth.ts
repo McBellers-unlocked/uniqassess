@@ -19,6 +19,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import type { RecruitmentCandidate, RecruitmentAssessment } from "@prisma/client";
 import { createCandidateDefence, submitCandidateDefence } from "./defence-service";
+import { closeCandidateLabs } from "./kubernetes-lab-service";
 
 export const COOKIE_NAME = "recruit_session";
 
@@ -59,6 +60,7 @@ export async function loadCandidate(token: string): Promise<CandidateAuthResult>
       candidate.workLockedAt = now;
     }
     nowExpired = true;
+    await closeCandidateLabs(candidate.id).catch(() => {});
   }
 
   // Defence timeout is also server anchored. Autosaved answers remain intact.

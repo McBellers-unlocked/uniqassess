@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { labConfigIssue } from "@/lib/recruit/kubernetes-lab-config";
 import {
   assertScenarioAccess,
   requireScenarioBuilder,
@@ -75,6 +76,8 @@ export async function PATCH(
     data.deliverablePlaceholder = body.deliverablePlaceholder === null ? null : String(body.deliverablePlaceholder);
   }
   if (body.config !== undefined) {
+    const issue = labConfigIssue(body.config, existing.kind);
+    if (issue) return NextResponse.json({ error: issue }, { status: 400 });
     data.config = body.config; // trusted admin; Prisma will serialise
   }
 

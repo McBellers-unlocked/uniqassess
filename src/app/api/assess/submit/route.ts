@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { loadCandidate, verifySessionCookie } from "@/lib/recruit/candidate-auth";
 import { createCandidateDefence } from "@/lib/recruit/defence-service";
 import { getAssessmentModePolicy } from "@/lib/recruit/assessment-modes";
+import { closeCandidateLabs } from "@/lib/recruit/kubernetes-lab-service";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
     }
     if (result.assessment.defenceEnabled) {
       const defence = await createCandidateDefence(result.candidate.id, result.assessment);
+      await closeCandidateLabs(result.candidate.id).catch(() => {});
       return NextResponse.json({ ok: true, defenceRequired: true, defenceDeadline: defence.deadline });
     }
     await prisma.recruitmentCandidate.update({
@@ -56,6 +58,7 @@ export async function POST(request: NextRequest) {
       data: { status: "submitted", submittedAt: now, workLockedAt: now },
     });
     await prisma.recruitmentActivityEvent.create({ data: { candidateId: result.candidate.id, eventType: "final_submission" } });
+    await closeCandidateLabs(result.candidate.id).catch(() => {});
     return NextResponse.json({ ok: true, submittedAt: now });
   } catch (e) {
     console.error("[assess submit]", e);

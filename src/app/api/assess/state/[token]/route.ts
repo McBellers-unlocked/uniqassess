@@ -132,6 +132,7 @@ export async function GET(
           briefMarkdown: personaliseBrief(t.briefMarkdown, candidate.name),
           totalMarks: t.totalMarks,
           codeExecutionEnabled: t.codeExecutionEnabled === true,
+          kubernetesLab: t.kubernetesLab ?? null,
           exhibitTitle: t.exhibitTitle,
           exhibitHtml: t.exhibitHtml,
           deliverableLabel: t.deliverableLabel,

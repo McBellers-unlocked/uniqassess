@@ -1,5 +1,7 @@
 # dependencies
 /node_modules
+/.npm-cache/
+__pycache__/
 /.pnp
 .pnp.*
 .yarn/*
@@ -21,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+/.deployment/
 
 # debug
 npm-debug.log*
