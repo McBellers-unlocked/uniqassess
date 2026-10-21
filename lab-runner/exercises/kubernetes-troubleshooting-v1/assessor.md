@@ -1,5 +1,8 @@
 # Assessor notes: kubernetes-troubleshooting-v1
 
+See the [reviewer walkthrough](../../../docs/LAB_REVIEWER_WALKTHROUGH.md)
+for the full command sequence, file-editor alternative and permission checks.
+
 Keep these notes outside candidate exhibits. The runner seeds two deliberate,
 independent defects: checkout's readiness probe uses port 8081 while its application
 listens on 8080; the service selects `app: checkout-previous` while pods have

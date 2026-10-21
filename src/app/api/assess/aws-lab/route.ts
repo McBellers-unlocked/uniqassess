@@ -6,6 +6,7 @@ import { labWorkIsActive, labCommandIssue } from "@/lib/recruit/kubernetes-lab-c
 import { LabError } from "@/lib/recruit/kubernetes-lab-runner";
 import { labRequestOriginAllowed } from "@/lib/recruit/kubernetes-lab-origin";
 import { readLab, refreshLab, startLab, runLabCommand } from "@/lib/recruit/aws-lab-service";
+import { buildLabFileCommand } from "@/lib/recruit/lab-file-command";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -49,20 +50,21 @@ export async function POST(request: NextRequest) {
     const origin = request.headers.get("origin");
     if (!labRequestOriginAllowed(origin, request.nextUrl.origin)) throw new LabError("Cross-origin lab requests are not permitted.", 403);
     const raw = await request.text();
-    if (raw.length > 20_000) throw new LabError("The lab request is too large.", 413);
+    if (raw.length > 110_000) throw new LabError("The lab request is too large.", 413);
     let body: Record<string, unknown>;
     try {
       const parsed: unknown = JSON.parse(raw);
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error();
       body = parsed as Record<string, unknown>;
     } catch { throw new LabError("The lab request must be valid JSON.", 400); }
-    if (!["start", "command"].includes(String(body.action))) throw new LabError("Choose a supported lab action.", 400);
+    if (!["start", "command", "file"].includes(String(body.action))) throw new LabError("Choose a supported lab action.", 400);
     const { candidate, task, lab } = await authorise(body.token, body.taskNumber, true);
     if (body.action === "start") await startLab(candidate.id, task.number, lab.templateId);
     else {
-      const issue = labCommandIssue(body.command, body.requestId);
+      const command = body.action === "file" ? buildLabFileCommand(body.file, body.requestId) : body.command;
+      const issue = labCommandIssue(command, body.requestId);
       if (issue) throw new LabError(issue, 400);
-      await runLabCommand(candidate.id, task.number, body.command as string, body.requestId as string);
+      await runLabCommand(candidate.id, task.number, command as string, body.requestId as string);
     }
     return response(await readLab(candidate.id, task.number));
   } catch (error) { return failure(error); }

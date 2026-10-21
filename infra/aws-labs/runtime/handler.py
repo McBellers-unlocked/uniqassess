@@ -38,6 +38,18 @@ LIMIT = 32768
 WORKER_LOCK_SECONDS = 180
 
 
+def workspace_archive(files):
+    """Candidate sources must stay writable; the supplied pipeline is executable."""
+    workspace = BytesIO()
+    with tarfile.open(fileobj=workspace, mode='w:gz') as archive:
+        for name, data in files.items():
+            entry = tarfile.TarInfo(name.removeprefix('candidate/'))
+            entry.size = len(data)
+            entry.mode = 0o755 if entry.name == 'pipeline.sh' else 0o644
+            archive.addfile(entry, BytesIO(data))
+    return workspace.getvalue()
+
+
 class Failure(Exception):
     def __init__(self, code, message):
         self.code, self.message = code, message
@@ -399,13 +411,7 @@ def _prepare(lab_id, token):
             'application_role_name': n['appRole'], 'data_bucket': n['bucket'], 'alarm_name': n['alarm'], 'release_version': function['Version']}
         files['candidate/terraform.tfvars.json'] = json.dumps(variables).encode()
         files['candidate/session.json'] = json.dumps({**variables, 'known_good_version': known_good}).encode()
-        workspace = BytesIO()
-        with tarfile.open(fileobj=workspace, mode='w:gz') as archive:
-            for name, data in files.items():
-                entry = tarfile.TarInfo(name.removeprefix('candidate/'))
-                entry.size, entry.mode = len(data), 0o644
-                archive.addfile(entry, BytesIO(data))
-        s3.put_object(Bucket=n['bucket'], Key='workspace/current.tar.gz', Body=workspace.getvalue())
+        s3.put_object(Bucket=n['bucket'], Key='workspace/current.tar.gz', Body=workspace_archive(files))
         bootstrap_id = str(uuid.uuid4())
         update(item['id'], bootstrapId=bootstrap_id, knownGoodVersion=known_good)
         source_key = create_source(s3, item, bootstrap_id,

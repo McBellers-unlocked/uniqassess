@@ -1,5 +1,8 @@
 # AWS service release exercise v1
 
+For assessor-only commands and permission troubleshooting, see the
+[reviewer walkthrough](../../../docs/LAB_REVIEWER_WALKTHROUGH.md).
+
 Package **only `candidate/`** for candidates. `assessor/` contains answers and reference repairs and must never enter a candidate archive, AI context, browser response or exhibit.
 
 The exercise is for a dedicated bounded sandbox account. This directory creates no account, IAM credentials, runner or Terraform state. Runtime acceptance and candidate separation are separate requirements. Candidate-visible synthetic telemetry in the assessment content is not a replacement for live cloud evidence.

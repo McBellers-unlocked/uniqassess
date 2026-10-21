@@ -640,7 +640,7 @@ export default function AssessmentView({
   const trailForActive = interactions.filter((i) => i.taskNumber === activeTask);
 
   return (
-    <div className="min-h-screen text-uq font-sans flex flex-col">
+    <div className="h-dvh min-h-0 overflow-hidden text-uq font-sans flex flex-col">
       {/* Header */}
       <header className="bg-uq-glass-strong backdrop-blur-xl border-b border-uq-faint shadow-uq-e1 flex-shrink-0">
         <div className="px-4 py-2.5 flex items-center justify-between gap-3">
