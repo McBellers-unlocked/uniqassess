@@ -138,7 +138,9 @@ export default function KubernetesLabPanel({
   const session = state?.session;
   const commands = state?.commands ?? [];
   const newestCommandId = commands[commands.length - 1]?.id;
-  useEffect(() => { if (outputScroller.current) outputScroller.current.scrollTop = 0; }, [newestCommandId]);
+  useEffect(() => {
+    if (view === "console" && outputScroller.current) outputScroller.current.scrollTop = 0;
+  }, [newestCommandId, view]);
   const commandRunning = commands.some((entry) => entry.status === "queued" || entry.status === "running");
   const expiresAt = session ? new Date(session.expiresAt).getTime() : null;
   const expired = session?.status === "expired" || (expiresAt !== null && expiresAt <= now);
