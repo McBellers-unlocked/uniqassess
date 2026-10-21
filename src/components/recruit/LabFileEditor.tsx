@@ -65,6 +65,7 @@ export default function LabFileEditor({ commands, canRun, closed, enqueue, sessi
         setMessage(file.operation === "write" ? `Saved ${file.path} to the lab.` : `Opened ${file.path}.`);
       }
     } catch (caught) {
+      setMessage("The file operation did not complete. Your editor text has been kept.");
       setError(caught instanceof Error ? caught.message : "The file operation failed. Your editor text has been kept.");
     }
   }, [attempt, commands]);
