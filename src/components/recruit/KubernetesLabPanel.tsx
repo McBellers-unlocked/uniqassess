@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LAB_COMMAND_MAX_CHARS, LAB_MAX_COMMANDS } from "@/lib/recruit/kubernetes-lab-config";
+import { LAB_FILE_RESULT, parseLabFileResult, type LabFileRequest } from "@/lib/recruit/lab-files";
+import LabFileEditor from "./LabFileEditor";
 
 interface LabCommand {
   id: string;
@@ -44,7 +46,9 @@ export default function KubernetesLabPanel({
   const endpoint = aws ? "/api/assess/aws-lab" : "/api/assess/lab";
   const [state, setState] = useState<LabState | null>(null);
   const [command, setCommand] = useState("");
-  const [pending, setPending] = useState<"load" | "start" | "command" | null>("load");
+  const [pending, setPending] = useState<"load" | "start" | "command" | "file" | null>("load");
+  const [view, setView] = useState<"console" | "files">("console");
+  const outputScroller = useRef<HTMLDivElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [accessLocked, setAccessLocked] = useState(false);
@@ -54,8 +58,8 @@ export default function KubernetesLabPanel({
   // A retry after a lost response must not execute the same command twice.
   const commandAttempt = useRef<{ command: string; requestId: string } | null>(null);
 
-  const request = useCallback(async (action?: "start" | "command", submittedCommand?: string) => {
-    if (pendingMutation.current) return;
+  const request = useCallback(async (action?: "start" | "command" | "file", submittedCommand?: string, file?: { input: LabFileRequest; requestId: string }): Promise<"accepted" | "rejected" | "unknown"> => {
+    if (pendingMutation.current) return "rejected";
     controller.current?.abort();
     const abort = new AbortController();
     controller.current = abort;
@@ -79,11 +83,11 @@ export default function KubernetesLabPanel({
           body: JSON.stringify({ token, taskNumber, action, ...(action === "command" ? {
             command: submittedCommand,
             requestId: commandAttempt.current?.requestId,
-          } : {}) }),
+          } : {}), ...(action === "file" && file ? { file: file.input, requestId: file.requestId } : {}) }),
         } : {}),
       });
       const body = await response.json();
-      if (sequence !== requestNumber.current || abort.signal.aborted) return;
+      if (sequence !== requestNumber.current || abort.signal.aborted) return "unknown";
       if (typeof body.available === "boolean" && Array.isArray(body.commands)) {
         setState(body as LabState);
       }
@@ -100,18 +104,20 @@ export default function KubernetesLabPanel({
               ? "This assessment is no longer active or your access has expired. Your recorded commands are retained."
               : "The lab could not be reached. Refresh its status before trying again.";
         setError(typeof body.error === "string" ? body.error : fallback);
-        return;
+        return response.status >= 500 ? "unknown" : "rejected";
       }
       if (action === "command") {
         commandAttempt.current = null;
         setCommand((value) => value === submittedCommand ? "" : value);
       }
       if (body.error) setError(body.error);
+      return "accepted";
     } catch (caught) {
-      if (abort.signal.aborted || sequence !== requestNumber.current) return;
+      if (abort.signal.aborted || sequence !== requestNumber.current) return "unknown";
       setError(caught instanceof SyntaxError
         ? "The lab returned an unreadable response. Refresh its status before trying again."
         : "The connection to the lab was interrupted. Refresh to check whether your command was recorded; retrying the same command will not run it twice.");
+      return "unknown";
     } finally {
       if (sequence === requestNumber.current) {
         pendingMutation.current = false;
@@ -131,6 +137,8 @@ export default function KubernetesLabPanel({
 
   const session = state?.session;
   const commands = state?.commands ?? [];
+  const newestCommandId = commands[commands.length - 1]?.id;
+  useEffect(() => { if (outputScroller.current) outputScroller.current.scrollTop = 0; }, [newestCommandId]);
   const commandRunning = commands.some((entry) => entry.status === "queued" || entry.status === "running");
   const expiresAt = session ? new Date(session.expiresAt).getTime() : null;
   const expired = session?.status === "expired" || (expiresAt !== null && expiresAt <= now);
@@ -155,8 +163,8 @@ export default function KubernetesLabPanel({
   }[session.status];
 
   return (
-    <section aria-label={`${providerLabel} practical lab`} className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-uq-elev1">
-      <div className="space-y-3 border-b border-uq-faint px-4 py-4">
+    <section aria-label={`${providerLabel} practical lab`} className="flex min-h-0 flex-1 flex-col overflow-hidden bg-uq-elev1">
+      <div className="max-h-[35%] shrink-0 space-y-2 overflow-y-auto border-b border-uq-faint px-4 py-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-uq-accent">Practical lab · Task {taskNumber}</div>
@@ -167,8 +175,11 @@ export default function KubernetesLabPanel({
             <button type="button" onClick={() => void request()} disabled={Boolean(pending)} className={buttonClass}>{pending === "load" ? "Refreshing…" : "Refresh"}</button>
           </div>
         </div>
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-uq-2">{instructions}</p>
-        <p className="text-xs leading-relaxed text-uq-3">Your commands, output and exit status are recorded for assessment. The environment expires automatically{session ? ` at ${new Date(session.expiresAt).toLocaleTimeString()}` : " when its allotted time ends"}. Include your diagnosis and verification in your written deliverable.</p>
+        <details>
+          <summary className="cursor-pointer text-xs text-uq-2">Lab instructions and time limit</summary>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-uq-2">{instructions}</p>
+          <p className="mt-2 text-xs leading-relaxed text-uq-3">Your commands, file operations, output and exit status are recorded for assessment. The environment expires automatically{session ? ` at ${new Date(session.expiresAt).toLocaleTimeString()}` : " when its allotted time ends"}. Include your diagnosis and verification in your written deliverable.</p>
+        </details>
         {error && <div role="alert" className="rounded-md border border-[color:var(--uq-danger-line)] bg-[color:var(--uq-danger-soft)] px-3 py-2 text-sm text-[color:var(--uq-danger-text)]">{error}</div>}
         {!state && !pending && <p className="text-sm text-uq-2">Refresh to check whether the lab is available. Your work in the written deliverable is saved separately.</p>}
         {state && !state.available && <p className="text-sm text-uq-2">The practical lab is unavailable. Contact your assessment organiser and continue with the task brief. Previously recorded commands remain visible below.</p>}
@@ -178,12 +189,24 @@ export default function KubernetesLabPanel({
         {state?.available && !session && !closed && <button type="button" onClick={() => void request("start")} disabled={Boolean(pending)} className={buttonClass}>{pending === "start" ? "Starting lab…" : `Start ${providerLabel} lab`}</button>}
       </div>
 
+      {session && <div className="flex shrink-0 gap-2 border-b border-uq-faint px-4 py-2" aria-label="Lab tools">
+        <button type="button" aria-pressed={view === "console"} onClick={() => setView("console")} className={`${buttonClass} ${view === "console" ? "bg-uq-elev2" : ""}`}>Commands</button>
+        <button type="button" aria-pressed={view === "files"} onClick={() => setView("files")} className={`${buttonClass} ${view === "files" ? "bg-uq-elev2" : ""}`}>Files</button>
+      </div>}
+
+      <div className={`${view === "files" ? "flex" : "hidden"} min-h-0 flex-1 flex-col`}>
+        {session && <LabFileEditor key={session.id} sessionId={session.id} commands={commands} canRun={Boolean(canRun)} closed={Boolean(closed)} enqueue={(input, requestId) => request("file", undefined, { input, requestId })} />}
+      </div>
+
+      <div className={`${view === "console" ? "flex" : "hidden"} min-h-0 flex-1 flex-col`}>
+
       {session && (
-        <div className="space-y-3 border-b border-uq-faint px-4 py-4">
+        <div className="max-h-[50%] shrink-0 space-y-2 overflow-y-auto border-b border-uq-faint px-4 py-3">
           <label htmlFor={`lab-command-${taskNumber}`} className="block text-sm font-medium text-uq">Command</label>
+          <details><summary className="cursor-pointer text-xs text-uq-3">Command help</summary>
           <p id={`lab-help-${taskNumber}`} className="text-xs leading-relaxed text-uq-3">{aws
             ? <>Run non-interactive commands with AWS CLI, Terraform and the supplied pipeline tools. Each job may run for up to five minutes, within the remaining assessment time. Jobs run in the background; this page polls their recorded status, so wait for the result before starting another job. Project files, Terraform state and cloud changes persist during the lab; shell variables and downloaded dependency caches do not. Begin each separate Terraform job with <code>terraform init -input=false</code>; the supplied pipeline already does this. Use a single run for commands that need to share variables.</>
-            : <>Run non-interactive shell commands with kubectl. Each run starts in <code>/workspace</code> and has a 20-second limit. A command that times out closes the lab; use short checks such as <code>kubectl rollout status deployment/checkout --timeout=10s</code>. Files and cluster changes persist between runs; the shell directory and variables do not. Use a single run for commands that need to share variables.</>}</p>
+            : <>Run non-interactive shell commands with kubectl. Each run starts in <code>/workspace</code> and has a 20-second limit. A command that times out closes the lab; use short checks such as <code>kubectl rollout status deployment/checkout --timeout=10s</code>. Files and cluster changes persist between runs; the shell directory and variables do not. Use a single run for commands that need to share variables.</>}</p></details>
           <textarea
             id={`lab-command-${taskNumber}`}
             aria-describedby={`lab-help-${taskNumber}`}
@@ -191,12 +214,12 @@ export default function KubernetesLabPanel({
             onChange={(event) => setCommand(event.target.value)}
             disabled={closed || session.status === "failed"}
             maxLength={LAB_COMMAND_MAX_CHARS}
-            rows={4}
+            rows={3}
             spellCheck={false}
             autoCapitalize="none"
             autoCorrect="off"
             placeholder={aws ? "pwd && ls" : "kubectl get pods"}
-            className="block w-full resize-y rounded-lg border border-uq-strong bg-uq-bg2 px-3 py-2 font-mono text-xs leading-relaxed text-uq placeholder:text-uq-3 focus:border-uq-accent focus:outline-none disabled:opacity-60"
+            className="block w-full resize-none rounded-lg border border-uq-strong bg-uq-bg2 px-3 py-2 font-mono text-xs leading-relaxed text-uq placeholder:text-uq-3 focus:border-uq-accent focus:outline-none disabled:opacity-60"
           />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="text-xs text-uq-3">{command.length.toLocaleString()} / {LAB_COMMAND_MAX_CHARS.toLocaleString()} characters · {commands.length} / {LAB_MAX_COMMANDS} runs</span>
@@ -208,23 +231,33 @@ export default function KubernetesLabPanel({
         </div>
       )}
 
-      <div className="space-y-3 px-4 py-4">
-        <h3 className="text-sm font-semibold text-uq">{aws ? "Recorded jobs" : "Recorded commands"}</h3>
+      <div ref={outputScroller} tabIndex={0} aria-label="Recorded lab output" className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
+        <h3 className="text-sm font-semibold text-uq">{aws ? "Recorded jobs" : "Recorded commands"} · Newest first</h3>
         {!commands.length && <p className="text-xs text-uq-3">Commands and their output will appear here after you run them.</p>}
-        {commands.map((entry) => (
+        {[...commands].reverse().map((entry) => (
           <article key={entry.id} className="overflow-hidden rounded-lg border border-uq-strong bg-uq-bg2">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-uq-faint px-3 py-2 text-xs text-uq-3">
               <time dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleTimeString()}</time>
               <span>{entry.status}{entry.exitCode !== null && entry.exitCode !== undefined ? ` · exit ${entry.exitCode}` : ""}</span>
             </div>
-            <pre className="whitespace-pre-wrap break-words px-3 py-3 font-mono text-xs leading-relaxed text-uq">$ {entry.command}</pre>
-            {entry.stdout && <div className="border-t border-uq-faint px-3 py-2"><span className="text-[10px] uppercase text-uq-3">Output</span><pre className="mt-1 whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-uq-2">{entry.stdout}</pre></div>}
+            {entry.command.startsWith("# lab-file ") ? <details className="px-3 py-2 text-xs text-uq-3"><summary className="cursor-pointer">File editor operation · View recorded command</summary><pre className="mt-2 whitespace-pre-wrap break-all font-mono">{entry.command}</pre></details> : <pre className="whitespace-pre-wrap break-words px-3 py-3 font-mono text-xs leading-relaxed text-uq">$ {entry.command}</pre>}
+            {entry.stdout && <div className="border-t border-uq-faint px-3 py-2"><span className="text-[10px] uppercase text-uq-3">Output</span><pre className="mt-1 whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-uq-2">{displayOutput(entry)}</pre></div>}
             {entry.stderr && <div className="border-t border-uq-faint px-3 py-2"><span className="text-[10px] uppercase text-uq-3">Standard error</span><pre className="mt-1 whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-[color:var(--uq-danger-text)]">{entry.stderr}</pre></div>}
             {(entry.status === "queued" || entry.status === "running") && <p className="border-t border-uq-faint px-3 py-2 text-xs text-uq-3">{aws ? "The job is running in the AWS sandbox. Its result will appear automatically." : "Waiting for the command result…"}</p>}
             {entry.truncated && <p className="border-t border-uq-faint px-3 py-2 text-xs text-uq-3">Output reached the recording limit and was truncated. Use a more specific command to inspect the relevant result.</p>}
           </article>
         ))}
       </div>
+      </div>
     </section>
   );
+}
+
+function displayOutput(entry: LabCommand) {
+  if (!entry.command.startsWith("# lab-file ") || !entry.stdout.startsWith(LAB_FILE_RESULT)) return entry.stdout;
+  try {
+    const result = parseLabFileResult(entry.stdout);
+    if (result.operation === "list") return result.files.join("\n") || "No files found.";
+    return `${result.operation === "write" ? "Saved" : "Opened"} ${result.path}\n\n${result.content}`;
+  } catch (error) { return error instanceof Error ? error.message : entry.stdout; }
 }

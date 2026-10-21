@@ -270,6 +270,25 @@ class RuntimeTests(unittest.TestCase):
                     output.addfile(entry, BytesIO())
                 with self.assertRaises(ValueError): j.safe_extract(archive, Path(directory) / 'target')
 
+    def test_seeded_project_is_writable_and_pipeline_is_executable(self):
+        sources = {'candidate/pipeline.sh': b'#!/bin/bash\necho ready\n', 'candidate/main.tf': b'# project\n'}
+        packed = h.workspace_archive(sources)
+        with tarfile.open(fileobj=BytesIO(packed), mode='r:gz') as archive:
+            self.assertEqual(archive.getmember('pipeline.sh').mode, 0o755)
+            self.assertEqual(archive.getmember('main.tf').mode, 0o644)
+        with tempfile.TemporaryDirectory() as directory:
+            archive = Path(directory) / 'source.tar.gz'
+            archive.write_bytes(packed)
+            target = Path(directory) / 'target'
+            target.mkdir()
+            j.safe_extract(archive, target)
+            # Save/reload the same archive format used between AWS jobs.
+            (target / 'main.tf').write_text('# edited\n')
+            self.assertEqual((target / 'main.tf').read_text(), '# edited\n')
+            self.assertEqual((target / 'pipeline.sh').read_bytes(), sources['candidate/pipeline.sh'])
+            if os.name != 'nt':
+                self.assertTrue(os.access(target / 'pipeline.sh', os.X_OK))
+
 
 if __name__ == '__main__':
     unittest.main()

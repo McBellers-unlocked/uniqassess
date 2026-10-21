@@ -55,6 +55,7 @@ def build(output):
                                     encoding="utf-8", newline="\n")
     (output / "pipeline.sh").write_text((ROOT / "assessor" / "pipeline.sh").read_text(encoding="utf-8"),
                                         encoding="utf-8", newline="\n")
+    (output / "pipeline.sh").chmod(0o755)
     return output
 
 

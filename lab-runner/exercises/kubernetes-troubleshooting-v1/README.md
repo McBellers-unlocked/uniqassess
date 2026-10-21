@@ -18,9 +18,10 @@ exercise does not require downloading packages or accessing the public internet.
 The console runs one batch command at a time. Multiline shell scripts, pipes and
 heredocs are supported. For example, save configuration with
 `kubectl get deployment checkout -o yaml > checkout.yaml`, then inspect or modify
-the file and use `kubectl apply -f checkout.yaml`. Files under `/workspace` persist
+the file in the lab's **Files** tab and use `kubectl apply -f checkout.yaml`.
+Save the file and wait for confirmation before applying it. Files under `/workspace` persist
 between commands. Each command starts in `/workspace` with a fresh shell, so shell
-variables and `cd` do not carry across commands. Interactive editors, interactive
+variables and `cd` do not carry across commands. Terminal editors, interactive
 shells and long-running foreground servers are not supported. Use bounded waits
 such as `kubectl rollout status deployment/checkout --timeout=10s` and run again if
 needed. A command reaching the 20-second limit ends the lab, so always use short
